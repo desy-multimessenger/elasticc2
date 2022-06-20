@@ -82,7 +82,7 @@ def interpolate_lc(object_id, plot=False):
                 x_sampled,
                 y_pred_g,
                 BAND_COLORS[band] + "-",
-                label="Prediction",
+                # label="Prediction",
                 alpha=0.2,
             )
 
