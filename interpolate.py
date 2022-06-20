@@ -7,12 +7,12 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 
 import matplotlib.pyplot as plt
 
-datadir = "data"
-lcfile = os.path.join(datadir, "plasticc_train_lightcurves.csv.gz")
-lcs = pd.read_csv(lcfile)
+DATADIR = "data"
+LCFILE = os.path.join(DATADIR, "plasticc_train_lightcurves.csv.gz")
+LCS = pd.read_csv(LCFILE)
 
-metafile = os.path.join(datadir, "plasticc_train_metadata.csv.gz")
-META = pd.read_csv(metafile)
+METAFILE = os.path.join(DATADIR, "plasticc_train_metadata.csv.gz")
+META = pd.read_csv(METAFILE)
 
 
 BAND_COLORS = ["C4", "C2", "C3", "C1", "k", "C5"]
@@ -35,19 +35,16 @@ CATEGORY_MAPPING = {
 }
 
 
-ids = lcs["object_id"].unique()
-
-
 def interpolate_lc(object_id, plot=False):
 
-    lc = lcs[lcs["object_id"] == object_id]
+    lc = LCS[LCS["object_id"] == object_id]
 
     t_id = META[META.object_id == object_id]["target"].values[0]
 
     classification = CATEGORY_MAPPING[t_id]
 
     if plot:
-        fig, ax = plt.subplots(figsize=(5, 4))
+        fig, ax = plt.subplots(figsize=(5, 4), tight_layout=True)
 
     for band, group in lc.groupby("passband"):
 
@@ -76,6 +73,7 @@ def interpolate_lc(object_id, plot=False):
 
         # Make the prediction on the meshed x-axis (ask for MSE as well)
         # x_pred = np.atleast_2d(np.linspace(start_mod, end_mod, n_points)).T
+        x_pred = x_sampled
         y_pred_g, sigma_g = gp.predict(x_sampled, return_std=True)
 
         if plot:
@@ -122,7 +120,11 @@ def interpolate_lc(object_id, plot=False):
     return None
 
 
-random_id = random.choice(ids)
+if __name__ == "__main__":
 
-interpolate_lc(object_id=random_id, plot=True)
-print("Regression done")
+    ids = LCS["object_id"].unique()
+    random_id = random.choice(ids)
+    print(f"Drawing a random ID: {random_id}")
+
+    interpolate_lc(object_id=random_id, plot=True)
+    print("Regression done")
