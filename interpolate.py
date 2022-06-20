@@ -1,18 +1,18 @@
-import os, random
-import numpy as np
-import pandas as pd
-
-from sklearn.gaussian_process.kernels import ConstantKernel, RBF
-from sklearn.gaussian_process import GaussianProcessRegressor
+import os
+import random
 
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from sklearn.gaussian_process import GaussianProcessRegressor
+from sklearn.gaussian_process.kernels import RBF, ConstantKernel
 
 DATADIR = "data"
 LCFILE = os.path.join(DATADIR, "plasticc_train_lightcurves.csv.gz")
-LCS = pd.read_csv(LCFILE)
+LCS = pd.read_csv(LCFILE).set_index(["object_id"])
 
 METAFILE = os.path.join(DATADIR, "plasticc_train_metadata.csv.gz")
-META = pd.read_csv(METAFILE)
+META = pd.read_csv(METAFILE).set_index(["object_id"])
 
 
 BAND_COLORS = ["C4", "C2", "C3", "C1", "k", "C5"]
@@ -37,9 +37,9 @@ CATEGORY_MAPPING = {
 
 def interpolate_lc(object_id, plot=False):
 
-    lc = LCS[LCS["object_id"] == object_id]
+    lc = LCS[LCS.index == object_id]
 
-    t_id = META[META.object_id == object_id]["target"].values[0]
+    t_id = META[META.index == object_id]["target"].values[0]
 
     classification = CATEGORY_MAPPING[t_id]
 
@@ -82,7 +82,6 @@ def interpolate_lc(object_id, plot=False):
                 x_sampled,
                 y_pred_g,
                 BAND_COLORS[band] + "-",
-                label="Prediction",
                 alpha=0.2,
             )
 
@@ -122,7 +121,7 @@ def interpolate_lc(object_id, plot=False):
 
 if __name__ == "__main__":
 
-    ids = LCS["object_id"].unique()
+    ids = LCS.index.unique()
     random_id = random.choice(ids)
     print(f"Drawing a random ID: {random_id}")
 
