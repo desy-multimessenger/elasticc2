@@ -123,20 +123,27 @@ def interpolate_lc(object_id, plot=False):
 
 if __name__ == "__main__":
 
-    nprocess = 8
+    nprocess = 40
 
-    ids = LCS.index.unique().values[:16]
+    ids = LCS.index.unique().values[:48]
 
     result_dict = {}
     i = 0
 
     with multiprocessing.Pool(nprocess) as p:
-        for result in p.imap_unordered(interpolate_lc, ids):
+        for res in p.map(interpolate_lc, ids):
             print(f"Processing lightcurve {i} of {len(ids)}")
             i += 1
-            result_dict.update(result)
+            result_dict.update(res)
 
     print(result_dict)
+
+    # result_dict = {}
+    # for _id in ids:
+    #     res = interpolate_lc(object_id=_id, plot=False)
+    #     result_dict.update(res)
+
+    # print(result_dict)
 
     # random_id = random.choice(ids)
     # print(f"Drawing a random ID: {random_id}")
