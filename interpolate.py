@@ -1,7 +1,9 @@
 import os
 import random
 
+import multiprocessing
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 import numpy as np
 import pandas as pd
 from sklearn.gaussian_process import GaussianProcessRegressor
@@ -116,14 +118,28 @@ def interpolate_lc(object_id, plot=False):
         plt.savefig(os.path.join(plotdir, f"{object_id}.png"), dpi=300)
         plt.close()
 
-    return None
+    return {"object_id": object_id, "x": x_pred, "y": y_pred_g, "y_err": sigma_g}
 
 
 if __name__ == "__main__":
 
-    ids = LCS.index.unique()
-    random_id = random.choice(ids)
-    print(f"Drawing a random ID: {random_id}")
+    nprocess = 8
 
-    interpolate_lc(object_id=random_id, plot=True)
+    ids = LCS.index.unique().values[:16]
+
+    result_dict = {}
+    i = 0
+
+    with multiprocessing.Pool(nprocess) as p:
+        for result in p.imap_unordered(interpolate_lc, ids):
+            print(f"Processing lightcurve {i} of {len(ids)}")
+            i += 1
+            result_dict.update(result)
+
+    print(result_dict)
+
+    # random_id = random.choice(ids)
+    # print(f"Drawing a random ID: {random_id}")
+
+    # interpolate_lc(object_id=random_id, plot=True)
     print("Regression done")
