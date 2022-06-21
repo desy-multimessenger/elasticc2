@@ -8,6 +8,10 @@ import numpy as np
 import pandas as pd
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import RBF, ConstantKernel
+from warnings import simplefilter
+from sklearn.exceptions import ConvergenceWarning
+
+# from sklearn.utils.testing import ignore_warnings
 
 DATADIR = "data"
 LCFILE = os.path.join(DATADIR, "plasticc_train_lightcurves.csv.gz")
@@ -18,6 +22,7 @@ META = pd.read_csv(METAFILE).set_index(["object_id"])
 
 
 BAND_COLORS = ["C4", "C2", "C3", "C1", "k", "C5"]
+BAND_STYLE = ["s", "^", "o", "x", "v", "p"]
 BAND_NAMES = ["u", "g", "r", "i", "z", "y"]
 CATEGORY_MAPPING = {
     90: "SN1a",
@@ -39,6 +44,8 @@ CATEGORY_MAPPING = {
 
 def interpolate_lc(object_id, plot=True):
 
+    simplefilter("ignore", category=ConvergenceWarning)
+
     lc = LCS[LCS.index == object_id]
 
     t_id = META[META.index == object_id]["target"].values[0]
@@ -46,7 +53,7 @@ def interpolate_lc(object_id, plot=True):
     classification = CATEGORY_MAPPING[t_id]
 
     if plot:
-        fig, ax = plt.subplots(figsize=(5, 4), tight_layout=True)
+        fig, ax = plt.subplots(figsize=(12, 12.0 / 1.6), tight_layout=True)
 
     result_df_list = []
 
@@ -105,9 +112,11 @@ def interpolate_lc(object_id, plot=True):
                 x=group["mjd"],
                 y=group["flux"],
                 yerr=group["flux_err"],
-                fmt="o",
+                ls="",
                 color=BAND_COLORS[band],
                 label=BAND_NAMES[band],
+                marker=BAND_STYLE[band],
+                ms=5,
             )
 
             _df["object_id"] = [object_id] * n_points
@@ -123,14 +132,14 @@ def interpolate_lc(object_id, plot=True):
 
     if plot:
         ax.set_title(f"ID = {object_id} / Type = {classification}")
-        plt.legend(ncol=6)
-        ax.set_ylabel("flux")
-        ax.set_xlabel("mjd")
+        plt.legend(ncol=6, fontsize=12)
+        ax.set_ylabel("Flux")
+        ax.set_xlabel("MJD")
 
         plotdir = "plots"
         if not os.path.exists(plotdir):
             os.makedirs(plotdir)
-        plt.savefig(os.path.join(plotdir, f"{object_id}.png"), dpi=300)
+        plt.savefig(os.path.join(plotdir, f"{object_id}.pdf"), dpi=300)
         plt.close()
 
     final_df = pd.concat(result_df_list)
@@ -140,16 +149,16 @@ def interpolate_lc(object_id, plot=True):
 
 if __name__ == "__main__":
 
-    nprocess = 1
+    nprocess = 40
 
-    ids = LCS.index.unique().values[:2]
+    ids = LCS.index.unique().values
 
     result_list = []
     i = 0
 
     with multiprocessing.Pool(nprocess) as p:
         for res in p.map(interpolate_lc, ids):
-            print(f"Processing lightcurve {i} of {len(ids)}")
+            print(f"Processing lightcurve {i+1} of {len(ids)}")
             i += 1
             result_list.append(res)
 
