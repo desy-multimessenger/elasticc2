@@ -37,7 +37,7 @@ CATEGORY_MAPPING = {
 }
 
 
-def interpolate_lc(object_id, plot=False):
+def interpolate_lc(object_id, plot=True):
 
     lc = LCS[LCS.index == object_id]
 
@@ -48,7 +48,11 @@ def interpolate_lc(object_id, plot=False):
     if plot:
         fig, ax = plt.subplots(figsize=(5, 4), tight_layout=True)
 
+    result_df_list = []
+
     for band, group in lc.groupby("passband"):
+
+        _df = pd.DataFrame()
 
         k = ConstantKernel(constant_value=1.0, constant_value_bounds=(1e-3, 1e3)) * RBF(
             length_scale=1, length_scale_bounds=(1e-3, 1e3)
@@ -106,6 +110,17 @@ def interpolate_lc(object_id, plot=False):
                 label=BAND_NAMES[band],
             )
 
+            _df["object_id"] = [object_id] * n_points
+            _df["mjd"] = x_pred
+            _df["passband"] = [band] * n_points
+            _df["flux"] = y_pred_g
+            _df["flux_err"] = sigma_g
+            _df["detected_bool"] = [1] * n_points
+
+            _df.set_index("object_id", inplace=True)
+
+            result_df_list.append(_df)
+
     if plot:
         ax.set_title(f"ID = {object_id} / Type = {classification}")
         plt.legend(ncol=6)
@@ -118,35 +133,33 @@ def interpolate_lc(object_id, plot=False):
         plt.savefig(os.path.join(plotdir, f"{object_id}.png"), dpi=300)
         plt.close()
 
-    return {"object_id": object_id, "x": x_pred, "y": y_pred_g, "y_err": sigma_g}
+    final_df = pd.concat(result_df_list)
+
+    return final_df
 
 
 if __name__ == "__main__":
 
-    nprocess = 40
+    nprocess = 1
 
-    ids = LCS.index.unique().values[:48]
+    ids = LCS.index.unique().values[:2]
 
-    result_dict = {}
+    result_list = []
     i = 0
 
     with multiprocessing.Pool(nprocess) as p:
         for res in p.map(interpolate_lc, ids):
             print(f"Processing lightcurve {i} of {len(ids)}")
             i += 1
-            result_dict.update(res)
+            result_list.append(res)
 
-    print(result_dict)
+    final_df = pd.concat(result_list)
 
-    # result_dict = {}
-    # for _id in ids:
-    #     res = interpolate_lc(object_id=_id, plot=False)
-    #     result_dict.update(res)
-
-    # print(result_dict)
-
-    # random_id = random.choice(ids)
-    # print(f"Drawing a random ID: {random_id}")
-
-    # interpolate_lc(object_id=random_id, plot=True)
     print("Regression done")
+
+    if not os.path.exists("augmented_data"):
+        os.makedirs("augmented_data")
+
+    outfile = os.path.join("augmented_data", "gp_training_data.csv")
+
+    final_df.to_csv(outfile)
