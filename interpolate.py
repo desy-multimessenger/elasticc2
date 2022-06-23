@@ -43,7 +43,7 @@ CATEGORY_MAPPING = {
 }
 
 
-def interpolate_lc(object_id, plot=True):
+def interpolate_lc(object_id, plot=False):
 
     simplefilter("ignore", category=ConvergenceWarning)
 
@@ -120,16 +120,16 @@ def interpolate_lc(object_id, plot=True):
                 ms=5,
             )
 
-            _df["object_id"] = [object_id] * n_points
-            _df["mjd"] = x_pred
-            _df["passband"] = [band] * n_points
-            _df["flux"] = y_pred_g
-            _df["flux_err"] = sigma_g
-            _df["detected_bool"] = [1] * n_points
+        _df["object_id"] = [object_id] * n_points
+        _df["mjd"] = x_pred
+        _df["passband"] = [band] * n_points
+        _df["flux"] = y_pred_g
+        _df["flux_err"] = sigma_g
+        _df["detected_bool"] = [1] * n_points
 
-            _df.set_index("object_id", inplace=True)
+        _df.set_index("object_id", inplace=True)
 
-            result_df_list.append(_df)
+        result_df_list.append(_df)
 
     if plot:
         ax.set_title(f"ID = {object_id} / Type = {classification}")
@@ -150,9 +150,9 @@ def interpolate_lc(object_id, plot=True):
 
 if __name__ == "__main__":
 
-    nprocess = 40
+    nprocess = 4
 
-    ids = LCS.index.unique().values[:2000]
+    ids = LCS.index.unique().values[:1]
 
     result_list = []
     i = 0
