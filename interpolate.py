@@ -14,10 +14,10 @@ from sklearn.exceptions import ConvergenceWarning
 # from sklearn.utils.testing import ignore_warnings
 
 DATADIR = "data"
-LCFILE = os.path.join(DATADIR, "plasticc_train_lightcurves.csv.gz")
+LCFILE = os.path.join(DATADIR, "plasticc_test_lightcurves_01.csv.gz")
 LCS = pd.read_csv(LCFILE).set_index(["object_id"])
 
-METAFILE = os.path.join(DATADIR, "plasticc_train_metadata.csv.gz")
+METAFILE = os.path.join(DATADIR, "plasticc_test_metadata.csv.gz")
 META = pd.read_csv(METAFILE).set_index(["object_id"])
 
 
@@ -151,7 +151,7 @@ if __name__ == "__main__":
 
     nprocess = 40
 
-    ids = LCS.index.unique().values
+    ids = LCS.index.unique().values[:2000]
 
     result_list = []
     i = 0
@@ -169,6 +169,6 @@ if __name__ == "__main__":
     if not os.path.exists("augmented_data"):
         os.makedirs("augmented_data")
 
-    outfile = os.path.join("augmented_data", "gp_training_data.csv")
+    outfile = os.path.join("augmented_data", "gp_test_data.csv")
 
     final_df.to_csv(outfile)
