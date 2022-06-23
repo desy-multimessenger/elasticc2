@@ -71,7 +71,7 @@ def interpolate_lc(object_id, plot=False):
         y_err = group["flux_err"].values
 
         gp = GaussianProcessRegressor(
-            kernel=k, alpha=y_err**2, n_restarts_optimizer=1000
+            kernel=k, alpha=y_err**2, n_restarts_optimizer=100
         )
 
         gp.fit(x, y)
@@ -150,9 +150,9 @@ def interpolate_lc(object_id, plot=False):
 
 if __name__ == "__main__":
 
-    nprocess = 4
+    nprocess = 44
 
-    ids = LCS.index.unique().values[:1]
+    ids = LCS.index.unique().values[:5000]
 
     result_list = []
     i = 0
