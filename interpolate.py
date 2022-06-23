@@ -39,6 +39,7 @@ CATEGORY_MAPPING = {
     16: "EB",
     53: "Mira",
     6: "Microlens",
+    0: "JohnDoe",
 }
 
 
