@@ -11,7 +11,7 @@ METAFILE = os.path.join(DATADIR, "plasticc_train_metadata.csv.gz")
 META = pd.read_csv(METAFILE).set_index(["object_id"])
 
 
-def target_name(object_id):
+def target_name(object_id, return_name=True):
     # source class id mapping
     category_mapping = {
         90: "SN1a",
@@ -32,9 +32,15 @@ def target_name(object_id):
     # match id
     t_id = META[META.index == object_id]["target"].values[0]
     t_name = category_mapping[t_id]
-    return t_name
+    if return_name:
+        return t_name
+    else:
+        return t_id
 
 
-r_idx = np.random.choice(np.unique(META.index))
-r_target_name = target_name(r_idx)
-print(r_idx, r_target_name)
+target_list = []
+for i in META.index:
+    target_id = target_name(i, return_name=False)
+    target_list.append(target_id)
+
+np.savez("augmented_data/pixelized_class.npz", target_list)
