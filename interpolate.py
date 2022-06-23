@@ -14,10 +14,10 @@ from sklearn.exceptions import ConvergenceWarning
 # from sklearn.utils.testing import ignore_warnings
 
 DATADIR = "data"
-LCFILE = os.path.join(DATADIR, "plasticc_train_lightcurves.csv.gz")
+LCFILE = os.path.join(DATADIR, "plasticc_test_lightcurves_01.csv.gz")
 LCS = pd.read_csv(LCFILE).set_index(["object_id"])
 
-METAFILE = os.path.join(DATADIR, "plasticc_train_metadata.csv.gz")
+METAFILE = os.path.join(DATADIR, "plasticc_test_metadata.csv.gz")
 META = pd.read_csv(METAFILE).set_index(["object_id"])
 
 
@@ -39,10 +39,11 @@ CATEGORY_MAPPING = {
     16: "EB",
     53: "Mira",
     6: "Microlens",
+    0: "JohnDoe",
 }
 
 
-def interpolate_lc(object_id, plot=True):
+def interpolate_lc(object_id, plot=False):
 
     simplefilter("ignore", category=ConvergenceWarning)
 
@@ -70,7 +71,7 @@ def interpolate_lc(object_id, plot=True):
         y_err = group["flux_err"].values
 
         gp = GaussianProcessRegressor(
-            kernel=k, alpha=y_err**2, n_restarts_optimizer=1000
+            kernel=k, alpha=y_err**2, n_restarts_optimizer=100
         )
 
         gp.fit(x, y)
@@ -119,16 +120,16 @@ def interpolate_lc(object_id, plot=True):
                 ms=5,
             )
 
-            _df["object_id"] = [object_id] * n_points
-            _df["mjd"] = x_pred
-            _df["passband"] = [band] * n_points
-            _df["flux"] = y_pred_g
-            _df["flux_err"] = sigma_g
-            _df["detected_bool"] = [1] * n_points
+        _df["object_id"] = [object_id] * n_points
+        _df["mjd"] = x_pred
+        _df["passband"] = [band] * n_points
+        _df["flux"] = y_pred_g
+        _df["flux_err"] = sigma_g
+        _df["detected_bool"] = [1] * n_points
 
-            _df.set_index("object_id", inplace=True)
+        _df.set_index("object_id", inplace=True)
 
-            result_df_list.append(_df)
+        result_df_list.append(_df)
 
     if plot:
         ax.set_title(f"ID = {object_id} / Type = {classification}")
@@ -149,9 +150,9 @@ def interpolate_lc(object_id, plot=True):
 
 if __name__ == "__main__":
 
-    nprocess = 40
+    nprocess = 44
 
-    ids = LCS.index.unique().values
+    ids = LCS.index.unique().values[:5000]
 
     result_list = []
     i = 0
@@ -169,6 +170,6 @@ if __name__ == "__main__":
     if not os.path.exists("augmented_data"):
         os.makedirs("augmented_data")
 
-    outfile = os.path.join("augmented_data", "gp_training_data.csv")
+    outfile = os.path.join("augmented_data", "gp_test_data.csv")
 
     final_df.to_csv(outfile)
