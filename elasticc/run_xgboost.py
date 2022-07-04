@@ -19,6 +19,7 @@ import xgboost as xgb
 from astropy.stats import knuth_bin_width
 
 USE_COLS_JAKOB = [
+    "stock",
     "bool_rise",
     "bool_fall",
     "bool_peaked",
@@ -81,63 +82,8 @@ USE_COLS_JAKOB = [
     "band_last_id",
 ]
 
-USE_COLS_SIMONE = [
-    "ndet",
-    "mag_det",
-    "mag_last",
-    "det_bands",
-    "peak_bands",
-    "last_bands",
-    "t_predetect",
-    "t_lc",
-    "t_rise",
-    "t_fall",
-    "rise_slope_lsstu",
-    "rise_slopesig_lsstu",
-    "fall_slope_lsstu",
-    "fall_slopesig_lsstu",
-    "rise_slope_lsstg",
-    "rise_slopesig_lsstg",
-    "fall_slope_lsstg",
-    "fall_slopesig_lsstg",
-    "rise_slope_lsstr",
-    "rise_slopesig_lsstr",
-    "fall_slope_lsstr",
-    "fall_slopesig_lsstr",
-    "rise_slope_lssti",
-    "rise_slopesig_lssti",
-    "fall_slope_lssti",
-    "fall_slopesig_lssti",
-    "rise_slope_lsstz",
-    "rise_slopesig_lsstz",
-    "fall_slope_lsstz",
-    "fall_slopesig_lsstz",
-    "rise_slope_lssty",
-    "rise_slopesig_lssty",
-    "fall_slope_lssty",
-    "fall_slopesig_lssty",
-    "lsstu-lsstg_det",
-    "lsstg-lsstr_det",
-    "lsstr-lssti_det",
-    "lssti-lsstz_det",
-    "lsstz-lssty_det",
-    "lsstu-lsstg_peak",
-    "lsstg-lsstr_peak",
-    "lsstr-lssti_peak",
-    "lssti-lsstz_peak",
-    "lsstz-lssty_peak",
-    "lsstu-lsstg_last",
-    "lsstg-lsstr_last",
-    "lsstr-lssti_last",
-    "lssti-lsstz_last",
-    "lsstz-lssty_last",
-    "host_sep",
-    "z",
-    "band_det_id",
-    "band_last_id",
-]
 
-USE_COLS = USE_COLS_SIMONE
+USE_COLS = USE_COLS_JAKOB
 
 BOOL_COLS = [
     "bool_rise",
@@ -186,10 +132,19 @@ def run_model(df, ndet, plot=False):
     df_set = df[(df["ndet"] >= detrange[0]) & (df["ndet"] <= detrange[1])]
     target = df_set.class_short - 1
     feats = df_set[USE_COLS]
-
     X_train, X_test, y_train, y_test = train_test_split(
         feats, target, test_size=0.3, random_state=42
     )
+    X_train = X_train.drop(columns=["stock"])
+    df_test = pd.concat([X_test, y_test], axis=1)
+
+    """
+    Now we cut the test sample so that only one datapoint
+    per stock-ID survives
+    """
+    df_test_subsample = get_random_stock_subsample(df_test)
+    X_test = df_test_subsample.drop(columns=["class_short", "stock"])
+    y_test = df_test_subsample.drop(columns=USE_COLS)
 
     scale_pos_weight = (len(y_train) - np.sum(y_train)) / np.sum(y_train)
 
@@ -243,7 +198,7 @@ def get_optimal_bins(df, nbins=12):
     out, bins = pd.qcut(df.ndet.values, nbins, retbins=True)
     final_bins = []
     for i in range(len(bins) - 1):
-        final_bins.append([bins[i], bins[i + 1]])
+        final_bins.append([int(bins[i]), int(bins[i + 1])])
 
     return final_bins
 
@@ -302,7 +257,7 @@ def plot_metrics(resultdict):
 if __name__ == "__main__":
 
     df = pd.read_csv(
-        "/Users/simeon/ml_workshop/data_elasticc/elasticc_feature_trainingset_v2.csv"
+        "/Users/simeon/ml_workshop/data_elasticc/elasticc_feature_trainingset_v3.csv"
     ).drop(columns="Unnamed: 0")
 
     # Should do this already in prep notebook
@@ -314,8 +269,8 @@ if __name__ == "__main__":
     result = {}
 
     for detrange in detranges:
+        print(f"Calculating bin: {detrange}")
         # for detrange in [[1, 1]]:
-        print(detrange)
         result.update(run_model(df=df, ndet=detrange))
 
     plot_metrics(result)
