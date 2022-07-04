@@ -106,7 +106,7 @@ def evaluate_model(features, grid_result, target):
     params = grid_result.cv_results_["params"]
     best_estimator = grid_result.best_estimator_
 
-    print("Evaluating model on the whole training sample:")
+    # print("Evaluating model on the whole training sample:")
     pred = best_estimator.predict(features)
     precision = metrics.precision_score(target, pred)
     recall = metrics.recall_score(target, pred)
@@ -168,24 +168,26 @@ def run_model(df, ndet, plot=False, load=False):
 
     kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
-    grid_search = RandomizedSearchCV(
-        model,
-        param_grid,
-        scoring=None,
-        n_iter=3,
-        n_jobs=4,
-        cv=kfold,
-        random_state=42,
-        verbose=1,
-        error_score="raise",
-    )
-
-    grid_result = grid_search.fit(X_train, y_train)
-
-    joblib.dump(grid_result, f"models/grid_result_{ndet}.pkl")
-
     if load:
-        joblib.load("models/grid_result.pkl")
+        # grid_result = joblib.load("models/grid_result_[0, 2000].pkl")
+        grid_result = joblib.load(f"models/grid_result_{ndet}.pkl")
+
+    else:
+        grid_search = RandomizedSearchCV(
+            model,
+            param_grid,
+            scoring=None,
+            n_iter=3,
+            n_jobs=4,
+            cv=kfold,
+            random_state=42,
+            verbose=1,
+            error_score="raise",
+        )
+
+        grid_result = grid_search.fit(X_train, y_train)
+
+        joblib.dump(grid_result, f"models/grid_result_{ndet}.pkl")
 
     result = evaluate_model(
         features=X_test,
@@ -247,7 +249,7 @@ def plot_metrics(resultdict):
     ax.scatter(interval_mean, recall)
     ax.set_xlabel("ndet interval center")
     ax.set_ylabel("recall")
-    ax.set_ylim([0.94, 1])
+    ax.set_ylim([0.75, 1])
     fig.savefig(f"plots/recall.png", dpi=300)
     plt.close()
 
@@ -262,9 +264,16 @@ def plot_metrics(resultdict):
 
 if __name__ == "__main__":
 
-    df = pd.read_csv(
-        "/Users/simeon/ml_workshop/data_elasticc/elasticc_feature_trainingset_v3.csv"
-    ).drop(columns="Unnamed: 0")
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+
+    infile = os.path.join(dir_path, "data_elasticc", "elasticc_feature_trainingset_v3")
+
+    if not os.path.exists(infile + ".parquet"):
+        df = pd.read_csv(infile + ".csv").drop(columns="Unnamed: 0")
+        print("Saving training data as parquet file")
+        df.to_parquet(infile + ".parquet")
+
+    df = pd.read_parquet(infile + ".parquet")
 
     # Should do this already in prep notebook
     for c in BOOL_COLS:
@@ -274,12 +283,12 @@ if __name__ == "__main__":
 
     result = {}
 
-    detranges = [[0, 2000]]
+    # detranges = [[0, 2000]]
 
     for detrange in detranges:
         print(f"Calculating bin: {detrange}")
         # for detrange in [[1, 1]]:
-        result.update(run_model(df=df, ndet=detrange))
+        result.update(run_model(df=df, ndet=detrange, load=False))
 
     plot_metrics(result)
 
