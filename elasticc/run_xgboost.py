@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # License: BSD-3-Clause
-import os
+import os, pickle
+import joblib
 from os import listdir
 from os.path import isfile, join
 import imageio
@@ -96,7 +97,7 @@ BOOL_COLS = [
 ]
 
 
-def evaluate_model(features, grid_result, metrics, target):
+def evaluate_model(features, grid_result, target):
     """ """
     print(f"Best: {grid_result.best_score_} using {grid_result.best_params_}")
 
@@ -127,7 +128,7 @@ def get_random_stock_subsample(df):
     return _df_sample
 
 
-def run_model(df, ndet, plot=False):
+def run_model(df, ndet, plot=False, load=False):
     """ """
     df_set = df[(df["ndet"] >= detrange[0]) & (df["ndet"] <= detrange[1])]
     target = df_set.class_short - 1
@@ -171,19 +172,24 @@ def run_model(df, ndet, plot=False):
         model,
         param_grid,
         scoring=None,
-        n_iter=1,
+        n_iter=3,
         n_jobs=4,
         cv=kfold,
         random_state=42,
         verbose=1,
         error_score="raise",
     )
+
     grid_result = grid_search.fit(X_train, y_train)
+
+    joblib.dump(grid_result, f"models/grid_result_{ndet}.pkl")
+
+    if load:
+        joblib.load("models/grid_result.pkl")
 
     result = evaluate_model(
         features=X_test,
         grid_result=grid_result,
-        metrics=metrics,
         target=y_test,
     )
 
@@ -267,6 +273,8 @@ if __name__ == "__main__":
     detranges = get_optimal_bins(df=df)
 
     result = {}
+
+    detranges = [[0, 2000]]
 
     for detrange in detranges:
         print(f"Calculating bin: {detrange}")
