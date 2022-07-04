@@ -117,6 +117,7 @@ def run_model(df, ndet, plot=False):
         use_label_encoder=False,
         random_state=42,
         objective="binary:logistic",
+        eval_metric="aucpr",
     )
     param_grid = {
         "max_depth": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
@@ -141,7 +142,7 @@ def run_model(df, ndet, plot=False):
         verbose=1,
         error_score="raise",
     )
-    grid_result = grid_search.fit(feats, target, eval_metric="aucpr")
+    grid_result = grid_search.fit(feats, target)
 
     result = evaluate_model(
         features=feats,
@@ -165,9 +166,10 @@ def plot_features(best_estimator, title):
     fig.savefig(f"plots/{ndet}.png", dpi=300)
 
 
-def plot_metrics():
+def plot_metrics(resultdict):
     fig, ax = plt.subplots(figsize=(5, 5))
-
+    print(result)
+    quit()
     fig.savefig(f"plots/metrics.png", dpi=300)
 
 
@@ -202,7 +204,7 @@ if __name__ == "__main__":
         print(detrange)
         result.update(run_model(df=df, ndet=detrange))
 
-    print(result)
+    plot_metrics(result)
 
 
 # imfiles = [f for f in listdir("plots") if isfile(join("plots", f))]
