@@ -4,7 +4,6 @@ import os, pickle
 import joblib
 from os import listdir
 from os.path import isfile, join
-import imageio
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -19,7 +18,7 @@ import xgboost as xgb
 
 from astropy.stats import knuth_bin_width
 
-USE_COLS_JAKOB = [
+USE_COLS = [
     "stock",
     "bool_rise",
     "bool_fall",
@@ -83,9 +82,6 @@ USE_COLS_JAKOB = [
     "band_last_id",
 ]
 
-
-USE_COLS = USE_COLS_JAKOB
-
 BOOL_COLS = [
     "bool_rise",
     "bool_fall",
@@ -95,6 +91,19 @@ BOOL_COLS = [
     "bool_fastfall",
     "bool_hasgaps",
 ]
+
+
+def set_cpus(n_cpus=4):
+    # n_cpus = Number of CPUs assigned to this process
+
+    pid = os.getpid()
+    print("PID: %i" % pid)
+
+    # Control which CPUs are made available for this script
+    cpu_arg = "".join([str(ci) + "," for ci in list(range(n_cpus))])[:-1]
+    cmd = f"taskset -cp {cpu_arg} {pid}"
+    print(f"executing command {cmd}")
+    os.system(cmd)
 
 
 def evaluate_model(features, grid_result, target):
@@ -128,7 +137,7 @@ def get_random_stock_subsample(df):
     return _df_sample
 
 
-def run_model(df, ndet, plot=False, load=False):
+def run_model(df, ndet, plot=False, load=False, n_jobs=4):
     """ """
     df_set = df[(df["ndet"] >= detrange[0]) & (df["ndet"] <= detrange[1])]
     target = df_set.class_short - 1
@@ -177,8 +186,8 @@ def run_model(df, ndet, plot=False, load=False):
             model,
             param_grid,
             scoring=None,
-            n_iter=3,
-            n_jobs=4,
+            n_iter=1,
+            n_jobs=n_jobs,
             cv=kfold,
             random_state=42,
             verbose=1,
@@ -264,9 +273,13 @@ def plot_metrics(resultdict):
 
 if __name__ == "__main__":
 
+    n_jobs = 1
+
+    set_cpus(n_cpus=1)
+
     dir_path = os.path.dirname(os.path.realpath(__file__))
 
-    infile = os.path.join(dir_path, "data_elasticc", "elasticc_feature_trainingset_v3")
+    infile = os.path.join(dir_path, "data", "elasticc_feature_trainingset_v3")
 
     if not os.path.exists(infile + ".parquet"):
         df = pd.read_csv(infile + ".csv").drop(columns="Unnamed: 0")
@@ -288,7 +301,7 @@ if __name__ == "__main__":
     for detrange in detranges:
         print(f"Calculating bin: {detrange}")
         # for detrange in [[1, 1]]:
-        result.update(run_model(df=df, ndet=detrange, load=False))
+        result.update(run_model(df=df, ndet=detrange, load=False, n_jobs=n_jobs))
 
     plot_metrics(result)
 
