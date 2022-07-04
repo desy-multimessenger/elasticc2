@@ -172,6 +172,15 @@ def evaluate_model(features, grid_result, metrics, target):
     return performance_dict
 
 
+def get_random_stock_subsample(df):
+    """
+    Returns a df consisting of one random datapoint for each unique stock ID
+    """
+    _df_sample = df.groupby("stock").sample(n=1, random_state=None)
+
+    return _df_sample
+
+
 def run_model(df, ndet, plot=False):
     """ """
     df_set = df[(df["ndet"] >= detrange[0]) & (df["ndet"] <= detrange[1])]
@@ -293,7 +302,7 @@ def plot_metrics(resultdict):
 if __name__ == "__main__":
 
     df = pd.read_csv(
-        "/Users/simeon/ml_workshop/data_elasticc/elasticc_feature_trainingset.csv"
+        "/Users/simeon/ml_workshop/data_elasticc/elasticc_feature_trainingset_v2.csv"
     ).drop(columns="Unnamed: 0")
 
     # Should do this already in prep notebook
