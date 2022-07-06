@@ -19,6 +19,7 @@ import xgboost as xgb
 from astropy.stats import knuth_bin_width
 
 USE_COLS = [
+    "ndet",
     "stock",
     "bool_rise",
     "bool_fall",
@@ -113,16 +114,19 @@ def evaluate_model(features, grid_result, target):
     means = grid_result.cv_results_["mean_test_score"]
     stds = grid_result.cv_results_["std_test_score"]
     params = grid_result.cv_results_["params"]
+
     best_estimator = grid_result.best_estimator_
 
     # print("Evaluating model on the whole training sample:")
     pred = best_estimator.predict(features)
+
     precision = metrics.precision_score(target, pred)
     recall = metrics.recall_score(target, pred)
     aucpr = metrics.average_precision_score(target, pred)
     print(f"Precision: {precision*100:.2f}")
     print(f"Recall: {recall*100:.2f}")
     print(f"AUCPR: {aucpr*100:.2f}")
+
     performance_dict = {"precision": precision, "recall": recall, "aucpr": aucpr}
 
     return performance_dict
@@ -137,7 +141,7 @@ def get_random_stock_subsample(df):
     return _df_sample
 
 
-def run_model(df, ndet, plot=False, load=False, n_jobs=4):
+def run_model(df, ndet, plot=False, load=False, n_jobs=4, n_iter=1):
     """ """
     df_set = df[(df["ndet"] >= detrange[0]) & (df["ndet"] <= detrange[1])]
     target = df_set.class_short - 1
@@ -161,7 +165,7 @@ def run_model(df, ndet, plot=False, load=False, n_jobs=4):
     model = xgb.XGBClassifier(
         scale_pos_weight=scale_pos_weight,
         use_label_encoder=False,
-        random_state=42,
+        # random_state=42,
         objective="binary:logistic",
         eval_metric="aucpr",
     )
@@ -175,28 +179,28 @@ def run_model(df, ndet, plot=False, load=False, n_jobs=4):
         "colsample_bytree": np.arange(0.1, 1.0, 0.01),
     }
 
-    kfold = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    kfold = StratifiedKFold(n_splits=5, shuffle=True)  # , random_state=42)
 
     if load:
-        # grid_result = joblib.load("models/grid_result_[0, 2000].pkl")
-        grid_result = joblib.load(f"models/grid_result_{ndet}.pkl")
+        grid_result = joblib.load("models/grid_result_[0, 2000]_niter_10.pkl")
+        # grid_result = joblib.load(f"models/grid_result_{ndet}.pkl")
 
     else:
         grid_search = RandomizedSearchCV(
             model,
             param_grid,
             scoring=None,
-            n_iter=1,
+            n_iter=n_iter,
             n_jobs=n_jobs,
             cv=kfold,
-            random_state=42,
-            verbose=1,
+            # random_state=42,
+            verbose=2,
             error_score="raise",
         )
 
         grid_result = grid_search.fit(X_train, y_train)
 
-        joblib.dump(grid_result, f"models/grid_result_{ndet}.pkl")
+        joblib.dump(grid_result, f"models/grid_result_{ndet}_niter_{n_iter}.pkl")
 
     result = evaluate_model(
         features=X_test,
@@ -205,7 +209,7 @@ def run_model(df, ndet, plot=False, load=False, n_jobs=4):
     )
 
     if plot:
-        plot_features(best_estimator=best_estimator, title=ndet)
+        plot_features(best_estimator=grid_result.best_estimator_, title=ndet, n_iter=10)
 
     return {f"{ndet[0]}-{ndet[1]}": result}
 
@@ -220,17 +224,22 @@ def get_optimal_bins(df, nbins=12):
     return final_bins
 
 
-def plot_features(best_estimator, title):
+def plot_features(best_estimator, title, n_iter):
     """ """
     fig, ax = plt.subplots(figsize=(10, 21))
-    ax.barh(USE_COLS, best_estimator.feature_importances_)
+    print(len(best_estimator.feature_importances_))
+    cols = []
+    for entry in USE_COLS:
+        if entry != "stock":
+            cols.append(entry)
+    ax.barh(cols, best_estimator.feature_importances_)
     # plt.tight_layout()
-    plt.title(ndet, fontsize=25)
+    plt.title(title, fontsize=25)
     plt.tight_layout()
-    fig.savefig(f"plots/{ndet}.png", dpi=300)
+    fig.savefig(f"plots/{title}_niter_{n_iter}.png", dpi=300)
 
 
-def plot_metrics(resultdict):
+def plot_metrics(resultdict, n_iter):
     """ """
     precision = []
     recall = []
@@ -251,7 +260,7 @@ def plot_metrics(resultdict):
     ax.set_xlabel("ndet interval center")
     ax.set_ylabel("precision")
     ax.set_ylim([0.5, 1])
-    fig.savefig(f"plots/precision.png", dpi=300)
+    fig.savefig(f"plots/precision_niter_{n_iter}.png", dpi=300)
     plt.close()
 
     fig, ax = plt.subplots(figsize=(5, 5))
@@ -259,7 +268,7 @@ def plot_metrics(resultdict):
     ax.set_xlabel("ndet interval center")
     ax.set_ylabel("recall")
     ax.set_ylim([0.75, 1])
-    fig.savefig(f"plots/recall.png", dpi=300)
+    fig.savefig(f"plots/recall_niter_{n_iter}.png", dpi=300)
     plt.close()
 
     fig, ax = plt.subplots(figsize=(5, 5))
@@ -267,14 +276,16 @@ def plot_metrics(resultdict):
     ax.set_xlabel("ndet interval center")
     ax.set_ylabel("aucpr")
     ax.set_ylim([0.5, 1])
-    fig.savefig(f"plots/aucpr.png", dpi=300)
+    fig.savefig(f"plots/aucpr_niter_{n_iter}.png", dpi=300)
     plt.close()
 
 
 if __name__ == "__main__":
+    """Run the fit and plot"""
+
+    n_iter = 10
 
     n_jobs = 1
-
     set_cpus(n_cpus=1)
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -296,21 +307,20 @@ if __name__ == "__main__":
 
     result = {}
 
-    # detranges = [[0, 2000]]
+    detranges = [[0, 2000]]
 
     for detrange in detranges:
         print(f"Calculating bin: {detrange}")
         # for detrange in [[1, 1]]:
-        result.update(run_model(df=df, ndet=detrange, load=False, n_jobs=n_jobs))
+        result.update(
+            run_model(
+                df=df,
+                ndet=detrange,
+                load=True,
+                n_jobs=n_jobs,
+                n_iter=n_iter,
+                plot=True,
+            )
+        )
 
-    plot_metrics(result)
-
-
-# imfiles = [f for f in listdir("plots") if isfile(join("plots", f))]
-# print(imfiles)
-# quit()
-
-# with imageio.get_writer("plots/features.gif", mode="I", duration=0.5) as writer:
-#     for image in imfiles:
-#         image = imageio.imread("plots/" + image)
-#         writer.append_data(image)
+    plot_metrics(resultdict=result, n_iter=n_iter)
