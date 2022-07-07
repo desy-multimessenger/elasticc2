@@ -43,15 +43,6 @@ class Model:
         convert to parquet for performance reasons
         and create a dataframe with the training data
         """
-        BOOL_COLS = [
-            "bool_rise",
-            "bool_fall",
-            "bool_peaked",
-            "bool_pure",
-            "bool_fastrise",
-            "bool_fastfall",
-            "bool_hasgaps",
-        ]
         if not os.path.exists(self.path_to_trainingset + ".parquet"):
             df = pd.read_csv(self.path_to_trainingset + ".csv").drop(
                 columns="Unnamed: 0"
@@ -59,7 +50,9 @@ class Model:
             print("Saving training data as parquet file")
             df.to_parquet(self.path_to_trainingset + ".parquet")
         df = pd.read_parquet(self.path_to_trainingset + ".parquet")
-        for c in BOOL_COLS:
+        bool_cols = [i for i in df.keys().values if "bool" in i]
+
+        for c in bool_cols:
             df[c] = df[c].astype(bool)
 
         self.df = df
@@ -102,8 +95,9 @@ class Model:
             We will classify 11 and 13 as 0 and 12 as 1
             """
             self.df = self.df.query("class_intermediate in [11, 12, 13]")
-            self.df["class_2a"] = self.df["class_intermediate"].replace(13, 11)
-            target = self.df.class_2a - 11
+            self.df["class_short"] = self.df["class_intermediate"].replace(13, 11)
+            self.df = self.df.drop(columns="class_intermediate")
+            target = self.df.class_short - 11
 
         elif self.stage == "2b":
             """
@@ -112,6 +106,7 @@ class Model:
             We will classify 21 as 0 and 22 as 1
             """
             self.df = self.df.query("class_intermediate in [21, 22]")
+            self.df["class_short"] = self.df.class_intermediate
             target = self.df.class_intermediate - 21
 
         else:
@@ -119,13 +114,7 @@ class Model:
 
         all_cols = self.df.keys().values.tolist()
 
-        excl_cols = [
-            "class_aggregate",
-            "class_full",
-            "class_intermediate",
-            "class_parsnip",
-            "class_short",
-        ]
+        excl_cols = [i for i in all_cols if "class" in i]
 
         self.cols_to_use = [i for i in all_cols if i not in excl_cols]
         feats = self.df[self.cols_to_use]

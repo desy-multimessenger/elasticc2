@@ -8,7 +8,7 @@ path_to_trainingset = os.path.join(
 )
 
 m = Model(
-    stage="2a", path_to_trainingset=path_to_trainingset, n_iter=1, random_state=42
+    stage="2b", path_to_trainingset=path_to_trainingset, n_iter=1, random_state=42
 )
 m.split_sample()
 m.train()
