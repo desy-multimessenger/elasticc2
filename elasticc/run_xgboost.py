@@ -93,22 +93,13 @@ BOOL_COLS = [
     "bool_hasgaps",
 ]
 
-
-def set_cpus(n_cpus=4):
-    # n_cpus = Number of CPUs assigned to this process
-
-    pid = os.getpid()
-    print("PID: %i" % pid)
-
-    # Control which CPUs are made available for this script
-    cpu_arg = "".join([str(ci) + "," for ci in list(range(n_cpus))])[:-1]
-    cmd = f"taskset -cp {cpu_arg} {pid}"
-    print(f"executing command {cmd}")
-    os.system(cmd)
+PLOT_DIR_BASE = "plots"
+MODEL_DIR_BASE = "models"
 
 
 def evaluate_model(features, grid_result, target):
     """ """
+    model = grid_result.best_params_
     print(f"Best: {grid_result.best_score_} using {grid_result.best_params_}")
 
     means = grid_result.cv_results_["mean_test_score"]
@@ -141,7 +132,7 @@ def get_random_stock_subsample(df):
     return _df_sample
 
 
-def run_model(df, ndet, plot=False, load=False, n_jobs=4, n_iter=1):
+def run_model(df, ndet, plot=False, load=False, n_iter=1, class_nr=1):
     """ """
     df_set = df[(df["ndet"] >= detrange[0]) & (df["ndet"] <= detrange[1])]
     target = df_set.class_short - 1
@@ -182,7 +173,11 @@ def run_model(df, ndet, plot=False, load=False, n_jobs=4, n_iter=1):
     kfold = StratifiedKFold(n_splits=5, shuffle=True)  # , random_state=42)
 
     if load:
-        grid_result = joblib.load("models/grid_result_[0, 2000]_niter_10.pkl")
+        if class_nr == 1:
+            path_to_gridresult = os.path.join(
+                MODEL_DIR_BASE, "first_stage", "grid_result_[0, 2000]_niter_10.pkl"
+            )
+        grid_result = joblib.load(path_to_gridresult)
         # grid_result = joblib.load(f"models/grid_result_{ndet}.pkl")
 
     else:
@@ -191,7 +186,6 @@ def run_model(df, ndet, plot=False, load=False, n_jobs=4, n_iter=1):
             param_grid,
             scoring=None,
             n_iter=n_iter,
-            n_jobs=n_jobs,
             cv=kfold,
             # random_state=42,
             verbose=2,
@@ -199,8 +193,17 @@ def run_model(df, ndet, plot=False, load=False, n_jobs=4, n_iter=1):
         )
 
         grid_result = grid_search.fit(X_train, y_train)
+        best_estimator = grid_result.best_estimator_
 
-        joblib.dump(grid_result, f"models/grid_result_{ndet}_niter_{n_iter}.pkl")
+        if class_nr == 1:
+            stage_path = os.path.join(MODEL_DIR_BASE, "first_stage")
+            outpath_grid = os.path.join(
+                stage_path, f"grid_result_{ndet}_niter_{n_iter}.pkl"
+            )
+            outpath_model = os.path.join(stage_path, "model_stage_1.pkl")
+
+        joblib.dump(grid_result, outpath_grid)
+        best_estimator.save_model(fname=outpath_model)
 
     result = evaluate_model(
         features=X_test,
@@ -209,7 +212,14 @@ def run_model(df, ndet, plot=False, load=False, n_jobs=4, n_iter=1):
     )
 
     if plot:
-        plot_features(best_estimator=grid_result.best_estimator_, title=ndet, n_iter=10)
+        if class_nr == 1:
+            plot_dir = os.path.join(
+                PLOT_DIR_BASE,
+                "first_stage",
+            )
+        plot_features(
+            best_estimator=best_estimator, title=ndet, n_iter=10, plot_dir=plot_dir
+        )
 
     return {f"{ndet[0]}-{ndet[1]}": result}
 
@@ -224,7 +234,7 @@ def get_optimal_bins(df, nbins=12):
     return final_bins
 
 
-def plot_features(best_estimator, title, n_iter):
+def plot_features(best_estimator, title, n_iter, plot_dir):
     """ """
     fig, ax = plt.subplots(figsize=(10, 21))
     print(len(best_estimator.feature_importances_))
@@ -233,13 +243,12 @@ def plot_features(best_estimator, title, n_iter):
         if entry != "stock":
             cols.append(entry)
     ax.barh(cols, best_estimator.feature_importances_)
-    # plt.tight_layout()
     plt.title(title, fontsize=25)
     plt.tight_layout()
-    fig.savefig(f"plots/{title}_niter_{n_iter}.png", dpi=300)
+    fig.savefig(os.path.join(plot_dir, f"{title}_niter_{n_iter}.png"), dpi=300)
 
 
-def plot_metrics(resultdict, n_iter):
+def plot_metrics(resultdict, n_iter, plot_dir):
     """ """
     precision = []
     recall = []
@@ -260,7 +269,7 @@ def plot_metrics(resultdict, n_iter):
     ax.set_xlabel("ndet interval center")
     ax.set_ylabel("precision")
     ax.set_ylim([0.5, 1])
-    fig.savefig(f"plots/precision_niter_{n_iter}.png", dpi=300)
+    fig.savefig(os.path.join(plot_dir, f"precision_niter_{n_iter}.png"), dpi=300)
     plt.close()
 
     fig, ax = plt.subplots(figsize=(5, 5))
@@ -268,7 +277,7 @@ def plot_metrics(resultdict, n_iter):
     ax.set_xlabel("ndet interval center")
     ax.set_ylabel("recall")
     ax.set_ylim([0.75, 1])
-    fig.savefig(f"plots/recall_niter_{n_iter}.png", dpi=300)
+    fig.savefig(os.path.join(plot_dir, f"firstrecall_niter_{n_iter}.png"), dpi=300)
     plt.close()
 
     fig, ax = plt.subplots(figsize=(5, 5))
@@ -276,22 +285,22 @@ def plot_metrics(resultdict, n_iter):
     ax.set_xlabel("ndet interval center")
     ax.set_ylabel("aucpr")
     ax.set_ylim([0.5, 1])
-    fig.savefig(f"plots/aucpr_niter_{n_iter}.png", dpi=300)
+    fig.savefig(os.path.join(plot_dir, f"aucpr_niter_{n_iter}.png"), dpi=300)
     plt.close()
 
 
 if __name__ == "__main__":
     """Run the fit and plot"""
 
-    n_iter = 10
+    create_dirs()
 
-    n_jobs = 1
-    set_cpus(n_cpus=1)
+    n_iter = 1
 
     dir_path = os.path.dirname(os.path.realpath(__file__))
 
     infile = os.path.join(dir_path, "data", "elasticc_feature_trainingset_v3")
 
+    # convert to parquet for performance reasons
     if not os.path.exists(infile + ".parquet"):
         df = pd.read_csv(infile + ".csv").drop(columns="Unnamed: 0")
         print("Saving training data as parquet file")
@@ -299,28 +308,29 @@ if __name__ == "__main__":
 
     df = pd.read_parquet(infile + ".parquet")
 
-    # Should do this already in prep notebook
     for c in BOOL_COLS:
         df[c] = df[c].astype(bool)
 
+    # get optimal binning (i.e. same number of transients per time-bin)
+    # for evaluation
     detranges = get_optimal_bins(df=df)
 
     result = {}
 
+    # Results are better with a single model for all time-bins
     detranges = [[0, 2000]]
 
+    # generate 1st stage model
     for detrange in detranges:
         print(f"Calculating bin: {detrange}")
-        # for detrange in [[1, 1]]:
         result.update(
             run_model(
                 df=df,
                 ndet=detrange,
                 load=True,
-                n_jobs=n_jobs,
                 n_iter=n_iter,
                 plot=True,
             )
         )
-
-    plot_metrics(resultdict=result, n_iter=n_iter)
+    plot_dir = os.path.join(PLOT_DIR_BASE, "first_stage")
+    plot_metrics(resultdict=result, n_iter=n_iter, plot_dir=plot_dir)
