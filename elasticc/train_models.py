@@ -92,9 +92,30 @@ class Model:
         Split the training data in a train and test sample
         """
         if self.stage == "1":
+            # Here we use the full training sample
             target = self.df.class_short - 1
+
+        elif self.stage == "2a":
+            """
+            Here we cut on everything that SHOULD have been selected
+            by stage 1 as non-recurring (11, 12 or 13)
+            We will classify 11 and 13 as 0 and 12 as 1
+            """
+            self.df = self.df.query("class_intermediate in [11, 12, 13]")
+            self.df["class_2a"] = self.df["class_intermediate"].replace(13, 11)
+            target = self.df.class_2a - 11
+
+        elif self.stage == "2b":
+            """
+            Here we cut on everything that SHOULD have been selected
+            by stage 1 as recurring (21 or 22)
+            We will classify 21 as 0 and 22 as 1
+            """
+            self.df = self.df.query("class_intermediate in [21, 22]")
+            target = self.df.class_intermediate - 21
+
         else:
-            raise ValueError("Not implemented yet")
+            raise ValueError("stage must be '1', '2a' or '2b'")
 
         all_cols = self.df.keys().values.tolist()
 
@@ -105,6 +126,7 @@ class Model:
             "class_parsnip",
             "class_short",
         ]
+
         self.cols_to_use = [i for i in all_cols if i not in excl_cols]
         feats = self.df[self.cols_to_use]
 
@@ -152,7 +174,7 @@ class Model:
             scoring=None,
             n_iter=self.n_iter,
             cv=kfold,
-            # random_state=42,
+            random_state=self.random_state,
             verbose=2,
             error_score="raise",
         )
@@ -268,20 +290,3 @@ class Model:
         df_sample = df.groupby("stock").sample(n=1, random_state=None)
 
         return df_sample
-
-
-if __name__ == "__main__":
-    """Run the fit and plot"""
-
-    path_to_trainingset = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "data",
-        "elasticc_feature_trainingset_v3",
-    )
-
-    m = Model(
-        stage="1", path_to_trainingset=path_to_trainingset, n_iter=10, random_state=42
-    )
-    m.split_sample()
-    m.train()
-    m.evaluate()
