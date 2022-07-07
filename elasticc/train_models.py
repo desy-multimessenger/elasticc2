@@ -96,7 +96,7 @@ class Model:
             """
             self.df = self.df.query("class_intermediate in [11, 12, 13]")
             self.df["class_short"] = self.df["class_intermediate"].replace(13, 11)
-            self.df = self.df.drop(columns="class_intermediate")
+            self.df.drop(columns="class_intermediate", inplace=True)
             target = self.df.class_short - 11
 
         elif self.stage == "2b":
@@ -107,7 +107,8 @@ class Model:
             """
             self.df = self.df.query("class_intermediate in [21, 22]")
             self.df["class_short"] = self.df.class_intermediate
-            target = self.df.class_intermediate - 21
+            self.df.drop(columns="class_intermediate", inplace=True)
+            target = self.df.class_short - 21
 
         else:
             raise ValueError("stage must be '1', '2a' or '2b'")
