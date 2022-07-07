@@ -1,21 +1,19 @@
 #!/usr/bin/env python3
 # License: BSD-3-Clause
 
-import os, pickle
+import os
+
 import joblib
-from os import listdir
-from os.path import isfile, join
-import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import xgboost as xgb
+from sklearn import metrics
 from sklearn.model_selection import (
     RandomizedSearchCV,
     StratifiedKFold,
     train_test_split,
 )
-from sklearn import metrics
-from sklearn.preprocessing import KBinsDiscretizer
-import xgboost as xgb
 
 
 class Model:
@@ -29,7 +27,7 @@ class Model:
         random_state: int = 42,
     ) -> None:
 
-        super(Model, self).__init__()
+        # super(Model, self).__init__()  # is this really needed ?
         self.stage = stage
         self.path_to_trainingset = path_to_trainingset
         self.n_iter = n_iter
@@ -156,7 +154,9 @@ class Model:
             "colsample_bytree": np.arange(0.1, 1.0, 0.01),
         }
 
-        kfold = StratifiedKFold(n_splits=5, shuffle=True)
+        kfold = StratifiedKFold(
+            n_splits=5, shuffle=True, random_state=self.random_state
+        )
 
         grid_search = RandomizedSearchCV(
             model,
@@ -184,7 +184,7 @@ class Model:
         joblib.dump(grid_result, outpath_grid)
         best_estimator.save_model(fname=outpath_model)
 
-    def evaluate(self, random_state=42):
+    def evaluate(self):
         """
         Evaluate the model
         """
@@ -195,9 +195,9 @@ class Model:
         grid_result = joblib.load(infile_grid)
         best_estimator = grid_result.best_estimator_
 
-        means = grid_result.cv_results_["mean_test_score"]
-        stds = grid_result.cv_results_["std_test_score"]
-        params = grid_result.cv_results_["params"]
+        # means = grid_result.cv_results_["mean_test_score"]
+        # stds = grid_result.cv_results_["std_test_score"]
+        # params = grid_result.cv_results_["params"]
 
         nbins = 12
 
@@ -211,6 +211,10 @@ class Model:
         per stock-ID survives
         """
         df_test_subsample = self.get_random_stock_subsample(self.df_test)
+
+        # debugging
+        self.evaluation_bins = evaluation_bins
+        self.df_test_subsample = df_test_subsample
 
         precision_list = []
         recall_list = []
