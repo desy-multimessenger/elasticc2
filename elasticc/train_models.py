@@ -112,6 +112,7 @@ class Model:
             raise ValueError("stage must be '1', '2a' or '2b'")
 
         all_cols = self.df.keys().values.tolist()
+        print(f"The complete dataset has {len(self.df)} entries.")
 
         excl_cols = [i for i in all_cols if "class" in i]
 
@@ -121,6 +122,11 @@ class Model:
         X_train, X_test, y_train, y_test = train_test_split(
             feats, target, test_size=0.3, random_state=self.random_state
         )
+        print("\nSplitting sample.\n")
+        print(f"The training sample has {len(X_train)} entries.")
+        print(f"The testing sample has {len(X_test)} entries.")
+        print(len(X_train) + len(X_test))
+
         X_train = X_train.drop(columns=["stock"])
         df_test = pd.concat([X_test, y_test], axis=1)
 
@@ -195,26 +201,22 @@ class Model:
         grid_result = joblib.load(infile_grid)
         best_estimator = grid_result.best_estimator_
 
-        # means = grid_result.cv_results_["mean_test_score"]
-        # stds = grid_result.cv_results_["std_test_score"]
-        # params = grid_result.cv_results_["params"]
-
-        nbins = 12
-
-        print(f"Best: {grid_result.best_score_} using {grid_result.best_params_}")
-        print(f"We now plot the evaluation using {nbins} time bins")
-
-        evaluation_bins = self.get_optimal_bins(nbins=nbins)
-
         """
         Now we cut the test sample so that only one datapoint
         per stock-ID survives
         """
         df_test_subsample = self.get_random_stock_subsample(self.df_test)
 
+        print(f"Best: {grid_result.best_score_} using {grid_result.best_params_}")
+
         # debugging
-        self.evaluation_bins = evaluation_bins
         self.df_test_subsample = df_test_subsample
+
+        evaluation_bins, nbins = self.get_optimal_bins(nbins=20)
+
+        self.evaluation_bins = evaluation_bins
+
+        print(f"We now plot the evaluation using {nbins} time bins")
 
         precision_list = []
         recall_list = []
@@ -268,14 +270,16 @@ class Model:
         )
         plt.close()
 
-    def get_optimal_bins(self, nbins=12):
+    def get_optimal_bins(self, nbins=20):
         """ """
-        out, bins = pd.qcut(self.df.ndet.values, nbins, retbins=True)
+        out, bins = pd.qcut(
+            self.df_test_subsample.ndet.values, nbins, retbins=True, duplicates="drop"
+        )
         final_bins = []
         for i in range(len(bins) - 1):
             final_bins.append([int(bins[i]), int(bins[i + 1])])
-
-        return final_bins
+        nbins = len(final_bins)
+        return final_bins, nbins
 
     def get_random_stock_subsample(self, df):
         """
