@@ -125,9 +125,9 @@ class Model:
         print("\nSplitting sample.\n")
         print(f"The training sample has {len(X_train)} entries.")
         print(f"The testing sample has {len(X_test)} entries.")
-        print(len(X_train) + len(X_test))
 
         X_train = X_train.drop(columns=["stock"])
+
         df_test = pd.concat([X_test, y_test], axis=1)
 
         self.X_train = X_train
@@ -201,6 +201,12 @@ class Model:
         grid_result = joblib.load(infile_grid)
         best_estimator = grid_result.best_estimator_
 
+        self.grid_result = grid_result
+        self.best_estimator = best_estimator
+
+        # Plot feature importance for full set
+        self.plot_features()
+
         """
         Now we cut the test sample so that only one datapoint
         per stock-ID survives
@@ -212,7 +218,7 @@ class Model:
         # debugging
         self.df_test_subsample = df_test_subsample
 
-        evaluation_bins, nbins = self.get_optimal_bins(nbins=20)
+        evaluation_bins, nbins = self.get_optimal_bins(nbins=14)
 
         self.evaluation_bins = evaluation_bins
 
@@ -288,3 +294,21 @@ class Model:
         df_sample = df.groupby("stock").sample(n=1, random_state=None)
 
         return df_sample
+
+    def plot_features(self):
+        """
+        Plot the features in their importance for the classification decision
+        """
+
+        fig, ax = plt.subplots(figsize=(10, 21))
+
+        cols = self.cols_to_use
+        cols.remove("stock")
+
+        ax.barh(cols, self.best_estimator.feature_importances_)
+        plt.title("Feature importance", fontsize=25)
+        plt.tight_layout()
+        fig.savefig(
+            os.path.join(self.plot_dir, f"feature_importance_{self.n_iter}.png"),
+            dpi=300,
+        )
