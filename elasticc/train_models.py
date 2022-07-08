@@ -235,9 +235,11 @@ class Model:
                 & (df_test_subsample["ndet"] <= timebin[1])
             ]
             X_test = df_test_bin.drop(columns=["class_short", "stock"])
+            cols = self.cols_to_use.append("stock")
             y_test = df_test_bin.drop(columns=self.cols_to_use)
             features = X_test
             target = y_test
+
             pred = best_estimator.predict(features)
 
             precision_list.append(metrics.precision_score(target, pred))
