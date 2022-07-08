@@ -117,6 +117,12 @@ class Model:
         excl_cols = [i for i in all_cols if "class" in i]
 
         self.cols_to_use = [i for i in all_cols if i not in excl_cols]
+
+        # if self.stage == "2b":
+        self.cols_to_use.remove("z")
+        self.cols_to_use.remove("z_err")
+        self.cols_to_use.remove("host_sep")
+
         feats = self.df[self.cols_to_use]
 
         X_train, X_test, y_train, y_test = train_test_split(
@@ -124,7 +130,7 @@ class Model:
         )
         print("\nSplitting sample.\n")
         print(f"The training sample has {len(X_train)} entries.")
-        print(f"The testing sample has {len(X_test)} entries.")
+        print(f"The testing sample has {len(X_test)} entries.\n")
 
         X_train = X_train.drop(columns=["stock"])
 
@@ -177,6 +183,7 @@ class Model:
 
         # Run the actual training
         grid_result = grid_search.fit(self.X_train, self.y_train)
+
         best_estimator = grid_result.best_estimator_
 
         self.grid_result = grid_result
@@ -194,6 +201,7 @@ class Model:
         """
         Evaluate the model
         """
+
         # Load the stuff
         infile_grid = os.path.join(
             self.model_dir, f"grid_result_niter_{self.n_iter}.pkl"
@@ -215,14 +223,14 @@ class Model:
 
         print(f"Best: {grid_result.best_score_} using {grid_result.best_params_}")
 
-        # debugging
         self.df_test_subsample = df_test_subsample
 
+        # We get even sized binning (at least as far as possible)
         evaluation_bins, nbins = self.get_optimal_bins(nbins=14)
 
         self.evaluation_bins = evaluation_bins
 
-        print(f"We now plot the evaluation using {nbins} time bins")
+        print(f"\nWe now plot the evaluation using {nbins} time bins")
 
         precision_list = []
         recall_list = []
@@ -235,7 +243,8 @@ class Model:
                 & (df_test_subsample["ndet"] <= timebin[1])
             ]
             X_test = df_test_bin.drop(columns=["class_short", "stock"])
-            cols = self.cols_to_use.append("stock")
+
+            self.cols_to_use.append("stock")
             y_test = df_test_bin.drop(columns=self.cols_to_use)
             features = X_test
             target = y_test
@@ -279,7 +288,10 @@ class Model:
         plt.close()
 
     def get_optimal_bins(self, nbins=20):
-        """ """
+        """
+        Determine optimal time bins (requirement: same number
+        of alerts per bin). This cannot always be fulfilled, so duplicates=drop is passed.
+        """
         out, bins = pd.qcut(
             self.df_test_subsample.ndet.values, nbins, retbins=True, duplicates="drop"
         )
@@ -305,6 +317,7 @@ class Model:
         fig, ax = plt.subplots(figsize=(10, 21))
 
         cols = self.cols_to_use
+
         cols.remove("stock")
 
         ax.barh(cols, self.best_estimator.feature_importances_)
