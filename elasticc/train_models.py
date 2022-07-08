@@ -119,9 +119,9 @@ class Model:
         self.cols_to_use = [i for i in all_cols if i not in excl_cols]
 
         # if self.stage == "2b":
-        self.cols_to_use.remove("z")
-        self.cols_to_use.remove("z_err")
-        self.cols_to_use.remove("host_sep")
+        # self.cols_to_use.remove("z")
+        # self.cols_to_use.remove("z_err")
+        # self.cols_to_use.remove("host_sep")
 
         feats = self.df[self.cols_to_use]
 
