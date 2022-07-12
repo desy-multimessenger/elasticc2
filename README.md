@@ -8,8 +8,12 @@ Useful links:
 
 How To:
 ```python
-import os
+import os, logging
 from train_models import Model
+
+logging.basicConfig()
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 path_to_trainingset = os.path.join(
     os.path.dirname(os.path.realpath(__file__)),
@@ -18,7 +22,11 @@ path_to_trainingset = os.path.join(
 )
 
 m = Model(
-    stage="1", path_to_trainingset=path_to_trainingset, n_iter=10, random_state=42
+    stage="1",
+    path_to_trainingset=path_to_trainingset,
+    n_iter=10,
+    random_state=42,
+    one_alert_per_stock=True,
 )
 m.split_sample()
 m.train()

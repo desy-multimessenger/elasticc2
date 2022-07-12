@@ -2,7 +2,7 @@
 # License: BSD-3-Clause
 
 import os
-
+import logging
 import joblib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,6 +15,8 @@ from sklearn.model_selection import (
     train_test_split,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class Model:
     """ """
@@ -25,6 +27,7 @@ class Model:
         path_to_trainingset: str,
         n_iter: int = 1,
         random_state: int = 42,
+        one_alert_per_stock: bool = False,
     ) -> None:
 
         # super(Model, self).__init__()  # is this really needed ?
@@ -32,6 +35,7 @@ class Model:
         self.path_to_trainingset = path_to_trainingset
         self.n_iter = n_iter
         self.random_state = random_state
+        self.one_alert_per_stock = one_alert_per_stock
 
         self.create_dirs()
         self.get_df()
@@ -45,7 +49,7 @@ class Model:
             df = pd.read_csv(self.path_to_trainingset + ".csv").drop(
                 columns="Unnamed: 0"
             )
-            print("Saving training data as parquet file")
+            logger.info("Saving training data as parquet file")
             df.to_parquet(self.path_to_trainingset + ".parquet")
         df = pd.read_parquet(self.path_to_trainingset + ".parquet")
         bool_cols = [i for i in df.keys().values if "bool" in i]
@@ -82,6 +86,18 @@ class Model:
         """
         Split the training data in a train and test sample
         """
+        logger.info(
+            f"The complete dataset has {len(self.df)} entries (before removing data)."
+        )
+
+        if self.one_alert_per_stock:
+            logger.info("You have selected to only keep one alert per stock ID")
+            logger.info(f"Initial length of sample: {len(self.df)}")
+            self.df = self.get_random_stock_subsample(self.df)
+            logger.info(
+                f"Length of sample after keeping one alert per stock only: {len(self.df)}"
+            )
+
         if self.stage == "1":
             # Here we use the full training sample
             target = self.df.class_short - 1
@@ -111,26 +127,22 @@ class Model:
         else:
             raise ValueError("stage must be '1', '2a' or '2b'")
 
+        logger.info(f"Stage {self.stage} dataset hast {len(self.df)} entries.")
+
         all_cols = self.df.keys().values.tolist()
-        print(f"The complete dataset has {len(self.df)} entries.")
 
         excl_cols = [i for i in all_cols if "class" in i]
 
         self.cols_to_use = [i for i in all_cols if i not in excl_cols]
-
-        # if self.stage == "2b":
-        # self.cols_to_use.remove("z")
-        # self.cols_to_use.remove("z_err")
-        # self.cols_to_use.remove("host_sep")
 
         feats = self.df[self.cols_to_use]
 
         X_train, X_test, y_train, y_test = train_test_split(
             feats, target, test_size=0.3, random_state=self.random_state
         )
-        print("\nSplitting sample.\n")
-        print(f"The training sample has {len(X_train)} entries.")
-        print(f"The testing sample has {len(X_test)} entries.\n")
+        logger.info("\nSplitting sample.\n")
+        logger.info(f"The training sample has {len(X_train)} entries.")
+        logger.info(f"The testing sample has {len(X_test)} entries.\n")
 
         X_train = X_train.drop(columns=["stock"])
 
@@ -189,10 +201,23 @@ class Model:
         self.grid_result = grid_result
         self.best_estimator = best_estimator
 
-        outpath_grid = os.path.join(
-            self.model_dir, f"grid_result_niter_{self.n_iter}.pkl"
-        )
-        outpath_model = os.path.join(self.model_dir, "model.pkl")
+        if self.one_alert_per_stock:
+            outpath_grid = os.path.join(
+                self.model_dir,
+                f"grid_result_niter_{self.n_iter}_one_alert_per_stock.pkl",
+            )
+            outpath_model = os.path.join(
+                self.model_dir,
+                f"model_stage_{self.stage}_niter_{self.n_iter}_one_alert_per_stock",
+            )
+        else:
+            outpath_grid = os.path.join(
+                self.model_dir, f"grid_result_niter_{self.n_iter}_all_alerts.pkl"
+            )
+            outpath_model = os.path.join(
+                self.model_dir,
+                f"model_stage_{self.stage}_niter_{self.n_iter}_all_alerts",
+            )
 
         joblib.dump(grid_result, outpath_grid)
         best_estimator.save_model(fname=outpath_model)
@@ -221,7 +246,7 @@ class Model:
         """
         df_test_subsample = self.get_random_stock_subsample(self.df_test)
 
-        print(f"Best: {grid_result.best_score_} using {grid_result.best_params_}")
+        logger.info(f"Best: {grid_result.best_score_} using {grid_result.best_params_}")
 
         self.df_test_subsample = df_test_subsample
 
@@ -230,7 +255,7 @@ class Model:
 
         self.evaluation_bins = evaluation_bins
 
-        print(f"\nWe now plot the evaluation using {nbins} time bins")
+        logger.info(f"\nWe now plot the evaluation using {nbins} time bins")
 
         precision_list = []
         recall_list = []
@@ -257,14 +282,25 @@ class Model:
 
             timebin_mean_list.append(np.mean([timebin[0], timebin[1]]))
 
+        if self.one_alert_per_stock:
+            outfiles = [
+                os.path.join(
+                    self.plot_dir, f"{i}_niter_{self.n_iter}_one_alert_per_stock.png"
+                )
+                for i in ["precision", "recall", "aucpr"]
+            ]
+        else:
+            outfiles = [
+                os.path.join(self.plot_dir, f"{i}_niter_{self.n_iter}_all_alerts.png")
+                for i in ["precision", "recall", "aucpr"]
+            ]
+
         fig, ax = plt.subplots(figsize=(5, 5))
         ax.scatter(timebin_mean_list, precision_list)
         ax.set_xlabel("ndet interval center")
         ax.set_ylabel("precision")
         ax.set_ylim([0.5, 1])
-        fig.savefig(
-            os.path.join(self.plot_dir, f"precision_niter_{self.n_iter}.png"), dpi=300
-        )
+        fig.savefig(outfiles[0], dpi=300)
         plt.close()
 
         fig, ax = plt.subplots(figsize=(5, 5))
@@ -272,9 +308,7 @@ class Model:
         ax.set_xlabel("ndet interval center")
         ax.set_ylabel("recall")
         ax.set_ylim([0.75, 1])
-        fig.savefig(
-            os.path.join(self.plot_dir, f"recall_niter_{self.n_iter}.png"), dpi=300
-        )
+        fig.savefig(outfiles[1], dpi=300)
         plt.close()
 
         fig, ax = plt.subplots(figsize=(5, 5))
@@ -282,9 +316,7 @@ class Model:
         ax.set_xlabel("ndet interval center")
         ax.set_ylabel("aucpr")
         ax.set_ylim([0.5, 1])
-        fig.savefig(
-            os.path.join(self.plot_dir, f"aucpr_niter_{self.n_iter}.png"), dpi=300
-        )
+        fig.savefig(outfiles[2], dpi=300)
         plt.close()
 
     def get_optimal_bins(self, nbins=20):
@@ -305,7 +337,7 @@ class Model:
         """
         Returns a df consisting of one random datapoint for each unique stock ID
         """
-        df_sample = df.groupby("stock").sample(n=1, random_state=None)
+        df_sample = df.groupby("stock").sample(n=1, random_state=self.random_state)
 
         return df_sample
 
@@ -323,7 +355,16 @@ class Model:
         ax.barh(cols, self.best_estimator.feature_importances_)
         plt.title("Feature importance", fontsize=25)
         plt.tight_layout()
+        if self.one_alert_per_stock:
+            outfile = os.path.join(
+                self.plot_dir,
+                f"feature_importance_{self.n_iter}_one_alert_per_stock.png",
+            )
+        else:
+            outfile = os.path.join(
+                self.plot_dir, f"feature_importance_{self.n_iter}_all_alerts.png"
+            )
         fig.savefig(
-            os.path.join(self.plot_dir, f"feature_importance_{self.n_iter}.png"),
+            outfile,
             dpi=300,
         )
