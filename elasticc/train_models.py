@@ -204,7 +204,7 @@ class Model:
         if self.one_alert_per_stock:
             outpath_grid = os.path.join(
                 self.model_dir,
-                f"grid_result_niter_{self.n_iter}_one_alert_per_stock.pkl",
+                f"grid_result_niter_{self.n_iter}_one_alert_per_stock",
             )
             outpath_model = os.path.join(
                 self.model_dir,
@@ -212,7 +212,7 @@ class Model:
             )
         else:
             outpath_grid = os.path.join(
-                self.model_dir, f"grid_result_niter_{self.n_iter}_all_alerts.pkl"
+                self.model_dir, f"grid_result_niter_{self.n_iter}_all_alerts"
             )
             outpath_model = os.path.join(
                 self.model_dir,
@@ -228,9 +228,14 @@ class Model:
         """
 
         # Load the stuff
-        infile_grid = os.path.join(
-            self.model_dir, f"grid_result_niter_{self.n_iter}.pkl"
-        )
+        if self.one_alert_per_stock:
+            infile_grid = os.path.join(
+                self.model_dir, f"grid_result_niter_{self.n_iter}_one_alert_per_stock"
+            )
+        else:
+            infile_grid = os.path.join(
+                self.model_dir, f"grid_result_niter_{self.n_iter}_all_alerts"
+            )
         grid_result = joblib.load(infile_grid)
         best_estimator = grid_result.best_estimator_
 
