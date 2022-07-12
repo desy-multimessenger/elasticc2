@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 from sklearn import metrics
+from sklearn.utils import shuffle
 from sklearn.model_selection import (
     RandomizedSearchCV,
     StratifiedKFold,
@@ -137,9 +138,14 @@ class Model:
 
         feats = self.df[self.cols_to_use]
 
-        X_train, X_test, y_train, y_test = train_test_split(
-            feats, target, test_size=0.3, random_state=self.random_state
+        X_train, X_test, y_train, y_test = self.train_test_split_stock(
+            X=feats, y=target, test_size=0.3, random_state=self.random_state
         )
+
+        # X_train, X_test, y_train, y_test = train_test_split(
+        #     feats, target, test_size=0.3, random_state=self.random_state
+        # )
+
         logger.info("\nSplitting sample.\n")
         logger.info(f"The training sample has {len(X_train)} entries.")
         logger.info(f"The testing sample has {len(X_test)} entries.\n")
@@ -151,6 +157,43 @@ class Model:
         self.X_train = X_train
         self.y_train = y_train
         self.df_test = df_test
+
+    def train_test_split_stock(self, X, y, test_size, random_state):
+        """
+        Split sample in train and test, while ensuring that all alerts
+        belonging to one stock end up in test OR train, not spread
+        over both
+        """
+        df = X.copy(deep=True)
+        df["class_short"] = y.values
+
+        df = shuffle(df, random_state=random_state).reset_index(drop=True)
+
+        # get all unique stock ids
+        unique_stock_ids = df.stock.unique()
+        nr_unique_stock_ids = len(unique_stock_ids)
+
+        """ select from the unique stock ids the sample size of 
+        stock ids belonging to train and test according to test_size
+        """
+        nr_train_stockids = int((1 - test_size) * nr_unique_stock_ids)
+        nr_test_stockids = nr_unique_stock_ids - nr_train_stockids
+
+        # randomly get train stockids
+        stock_ids_train = np.random.choice(
+            unique_stock_ids, size=nr_train_stockids, replace=False
+        )
+
+        # create dataframes based on that selection
+        df_train = df.query("stock in @stock_ids_train")
+        df_test = df.query("stock not in @stock_ids_train")
+
+        X_train = df_train.drop(columns="class_short").reset_index(drop=True)
+        X_test = df_test.drop(columns="class_short").reset_index(drop=True)
+        y_train = df_train.filter(["class_short"]).reset_index(drop=True)["class_short"]
+        y_test = df_test.filter(["class_short"]).reset_index(drop=True)["class_short"]
+
+        return X_train, X_test, y_train, y_test
 
     def train(self):
         """

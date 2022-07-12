@@ -15,7 +15,7 @@ logger.setLevel(logging.INFO)
 m = Model(
     stage="1",
     path_to_trainingset=path_to_trainingset,
-    n_iter=1,
+    n_iter=10,
     random_state=42,
     one_alert_per_stock=False,
 )
