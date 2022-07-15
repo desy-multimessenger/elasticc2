@@ -206,7 +206,7 @@ class Model:
 
         return X_train, X_test, y_train, y_test
 
-    def train(self):
+    def train(self, grid_search_sample_size=10000):
         """
         Do the training
         """
@@ -247,10 +247,29 @@ class Model:
             error_score="raise",
         )
 
-        # Run the actual training
-        grid_result = grid_search.fit(self.X_train, self.y_train)
+        """
+        Now we downsample our training set to do a
+        fine-grained grid search. Training will be done 
+        on the best estimator from that search and uses 
+        the full sample
+        """
+        logger.info(
+            f"Downsampling for grid search to {grid_search_sample_size} entries\n"
+        )
+        X_train_subset = self.X_train.head(grid_search_sample_size)
+        y_train_subset = self.y_train.head(grid_search_sample_size)
 
-        best_estimator = grid_result.best_estimator_
+        grid_result = grid_search.fit(X_train_subset, y_train_subset)
+
+        """
+        Run the actual training with the best estimator
+        on the full training sample
+        """
+        logger.info(
+            "\nNow fitting with the best estimator from the grid search. This will take time"
+        )
+
+        best_estimator = grid_result.best_estimator_.fit(self.X_train, self.y_train)
 
         self.grid_result = grid_result
         self.best_estimator = best_estimator
