@@ -46,17 +46,24 @@ class Model:
         convert to parquet for performance reasons
         and create a dataframe with the training data
         """
-        if not os.path.exists(self.path_to_trainingset + ".parquet"):
-            df = pd.read_csv(self.path_to_trainingset + ".csv").drop(
-                columns="Unnamed: 0"
-            )
-            logger.info("Saving training data as parquet file")
-            df.to_parquet(self.path_to_trainingset + ".parquet")
-        df = pd.read_parquet(self.path_to_trainingset + ".parquet")
-        bool_cols = [i for i in df.keys().values if "bool" in i]
+        filename, file_extension = os.path.splitext(self.path_to_trainingset)
 
-        for c in bool_cols:
-            df[c] = df[c].astype(bool)
+        if not os.path.exists(filename + ".parquet"):
+            if file_extension == ".csv":
+                df = pd.read_csv(self.path_to_trainingset).drop(columns="Unnamed: 0")
+            elif file_extension == ".pkl":
+                df = pd.read_pickle(
+                    self.path_to_trainingset
+                )  # .drop(columns="Unnamed: 0")
+            logger.info("Saving training data as parquet file")
+            df.to_parquet(filename + ".parquet")
+
+        df = pd.read_parquet(filename + ".parquet")
+
+        # bool_cols = [i for i in df.keys().values if "bool" in i]
+
+        # for c in bool_cols:
+        #     df[c] = df[c].astype(bool)
 
         self.df = df
 
@@ -98,6 +105,16 @@ class Model:
             logger.info(
                 f"Length of sample after keeping one alert per stock only: {len(self.df)}"
             )
+
+        # Create shortened class columns
+        logger.info("Creating additional columns. This might take a moment")
+        self.df = self.df.assign(
+            class_intermediate=lambda x: int(x["class_full"].values[0] / 10)
+        )
+        self.df = self.df.assign(
+            class_short=lambda x: int(x["class_intermediate"].values[0] / 10)
+        )
+        logger.info("Done.")
 
         if self.stage == "1":
             # Here we use the full training sample
