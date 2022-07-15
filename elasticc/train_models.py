@@ -52,18 +52,26 @@ class Model:
             if file_extension == ".csv":
                 df = pd.read_csv(self.path_to_trainingset).drop(columns="Unnamed: 0")
             elif file_extension == ".pkl":
-                df = pd.read_pickle(
-                    self.path_to_trainingset
-                )  # .drop(columns="Unnamed: 0")
+                df = pd.read_pickle(self.path_to_trainingset)
+
+                # Create shortened class columns
+                logger.info("Creating additional columns. This might take a moment")
+
+                class_full = df.class_full.values
+                class_intermediate = []
+                class_short = []
+                for c in class_full:
+                    class_intermediate.append(int(c / 10))
+                for c in class_intermediate:
+                    class_short.append(int(c / 10))
+
+                df["class_intermediate"] = class_intermediate
+                df["class_short"] = class_short
+
             logger.info("Saving training data as parquet file")
             df.to_parquet(filename + ".parquet")
 
         df = pd.read_parquet(filename + ".parquet")
-
-        # bool_cols = [i for i in df.keys().values if "bool" in i]
-
-        # for c in bool_cols:
-        #     df[c] = df[c].astype(bool)
 
         self.df = df
 
@@ -105,16 +113,6 @@ class Model:
             logger.info(
                 f"Length of sample after keeping one alert per stock only: {len(self.df)}"
             )
-
-        # Create shortened class columns
-        logger.info("Creating additional columns. This might take a moment")
-        self.df = self.df.assign(
-            class_intermediate=lambda x: int(x["class_full"].values[0] / 10)
-        )
-        self.df = self.df.assign(
-            class_short=lambda x: int(x["class_intermediate"].values[0] / 10)
-        )
-        logger.info("Done.")
 
         if self.stage == "1":
             # Here we use the full training sample
@@ -158,10 +156,6 @@ class Model:
         X_train, X_test, y_train, y_test = self.train_test_split_stock(
             X=feats, y=target, test_size=0.3, random_state=self.random_state
         )
-
-        # X_train, X_test, y_train, y_test = train_test_split(
-        #     feats, target, test_size=0.3, random_state=self.random_state
-        # )
 
         logger.info("\nSplitting sample.\n")
         logger.info(f"The training sample has {len(X_train)} entries.")
