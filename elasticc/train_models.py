@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xgboost as xgb
+from tqdm import tqdm
 from sklearn import metrics
 from sklearn.utils import shuffle
 from sklearn.model_selection import (
@@ -220,6 +221,7 @@ class Model:
             random_state=self.random_state,
             objective="binary:logistic",
             eval_metric="aucpr",
+            colsample_bytree=1.0,
         )
 
         param_grid = {
@@ -229,7 +231,7 @@ class Model:
             "learning_rate": np.arange(0.0005, 0.5, 0.0005),
             "subsample": np.arange(0.01, 1.0, 0.01),
             "colsample_bylevel": np.round(np.arange(0.1, 1.0, 0.01)),
-            "colsample_bytree": np.arange(0.1, 1.0, 0.01),
+            # "colsample_bytree": np.arange(0.1, 1.0, 0.01),
         }
 
         kfold = StratifiedKFold(
@@ -237,8 +239,8 @@ class Model:
         )
 
         grid_search = RandomizedSearchCV(
-            model,
-            param_grid,
+            estimator=model,
+            param_distributions=param_grid,
             scoring=None,
             n_iter=self.n_iter,
             cv=kfold,
@@ -256,10 +258,14 @@ class Model:
         logger.info(
             f"Downsampling for grid search to {grid_search_sample_size} entries\n"
         )
-        X_train_subset = self.X_train.head(grid_search_sample_size)
-        y_train_subset = self.y_train.head(grid_search_sample_size)
+        X_train_subset = self.X_train.sample(
+            n=grid_search_sample_size, random_state=self.random_state
+        )
+        y_train_subset = self.y_train.sample(n=grid_search_sample_size)
 
-        grid_result = grid_search.fit(X_train_subset, y_train_subset)
+        grid_result = grid_search.fit(
+            X_train_subset, y_train_subset, random_state=self.random_state
+        )
 
         """
         Run the actual training with the best estimator
@@ -314,6 +320,8 @@ class Model:
 
         self.grid_result = grid_result
         self.best_estimator = best_estimator
+
+        logger.info(f"Loading best estimator. Parameters:\n{self.best_estimator}")
 
         # Plot feature importance for full set
         self.plot_features()
