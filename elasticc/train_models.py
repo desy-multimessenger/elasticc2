@@ -38,6 +38,7 @@ class Model:
         self.path_to_trainingset = path_to_trainingset
         self.n_iter = n_iter
         self.random_state = random_state
+        self.grid_search_sample_size = grid_search_sample_size
         self.one_alert_per_stock = one_alert_per_stock
 
         self.create_dirs()
