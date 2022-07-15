@@ -235,7 +235,7 @@ class Model:
         }
 
         kfold = StratifiedKFold(
-            n_splits=5, shuffle=True, random_state=self.random_state
+            n_splits=5, shuffle=True, random_state=self.random_state + 3
         )
 
         grid_search = RandomizedSearchCV(
@@ -244,7 +244,7 @@ class Model:
             scoring=None,
             n_iter=self.n_iter,
             cv=kfold,
-            random_state=self.random_state,
+            random_state=self.random_state + 4,
             verbose=2,
             error_score="raise",
         )
@@ -259,13 +259,13 @@ class Model:
             f"Downsampling for grid search to {grid_search_sample_size} entries\n"
         )
         X_train_subset = self.X_train.sample(
-            n=grid_search_sample_size, random_state=self.random_state
+            n=grid_search_sample_size, random_state=self.random_state + 5
         )
-        y_train_subset = self.y_train.sample(n=grid_search_sample_size)
+        y_train_subset = self.y_train.sample(
+            n=grid_search_sample_size, random_state=self.random_state + 5
+        )
 
-        grid_result = grid_search.fit(
-            X_train_subset, y_train_subset, random_state=self.random_state
-        )
+        grid_result = grid_search.fit(X_train_subset, y_train_subset)
 
         """
         Run the actual training with the best estimator
