@@ -29,6 +29,7 @@ class Model:
         path_to_trainingset: str,
         n_iter: int = 1,
         random_state: int = 42,
+        grid_search_sample_size: int = 10000,
         one_alert_per_stock: bool = False,
     ) -> None:
 
@@ -207,7 +208,7 @@ class Model:
 
         return X_train, X_test, y_train, y_test
 
-    def train(self, grid_search_sample_size=10000):
+    def train(self):
         """
         Do the training
         """
@@ -256,13 +257,13 @@ class Model:
         the full sample
         """
         logger.info(
-            f"Downsampling for grid search to {grid_search_sample_size} entries\n"
+            f"Downsampling for grid search to {self.grid_search_sample_size} entries\n"
         )
         X_train_subset = self.X_train.sample(
-            n=grid_search_sample_size, random_state=self.random_state + 5
+            n=self.grid_search_sample_size, random_state=self.random_state + 5
         )
         y_train_subset = self.y_train.sample(
-            n=grid_search_sample_size, random_state=self.random_state + 5
+            n=self.grid_search_sample_size, random_state=self.random_state + 5
         )
 
         grid_result = grid_search.fit(X_train_subset, y_train_subset)

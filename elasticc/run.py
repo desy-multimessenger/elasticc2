@@ -1,4 +1,4 @@
-import os
+import os, time
 import logging
 from train_models import Model
 
@@ -12,13 +12,25 @@ logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+
 m = Model(
     stage="1",
     path_to_trainingset=path_to_trainingset,
-    n_iter=1,
-    random_state=42,
-    one_alert_per_stock=False,
+    n_iter=100,
+    random_state=60,
+    grid_search_sample_size=20000,
 )
 m.split_sample()
-# m.train()
-# m.evaluate()
+
+t_start = time.time()
+
+m.train()
+
+t_end = time.time()
+
+logger.info("------------------------------------")
+logger.info("           FITTING DONE             ")
+logger.info(f"  This took {t_end-t_start} seconds")
+logger.info("------------------------------------")
+
+m.evaluate()
