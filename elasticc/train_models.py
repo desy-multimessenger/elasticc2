@@ -4,11 +4,11 @@
 import os
 import logging
 import joblib
+import time
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-from tqdm import tqdm
 from sklearn import metrics
 from sklearn.utils import shuffle
 from sklearn.model_selection import (
@@ -30,7 +30,6 @@ class Model:
         n_iter: int = 1,
         random_state: int = 42,
         grid_search_sample_size: int = 10000,
-        one_alert_per_stock: bool = False,
     ) -> None:
 
         # super(Model, self).__init__()  # is this really needed ?
@@ -39,7 +38,6 @@ class Model:
         self.n_iter = n_iter
         self.random_state = random_state
         self.grid_search_sample_size = grid_search_sample_size
-        self.one_alert_per_stock = one_alert_per_stock
 
         self.create_dirs()
         self.get_df()
@@ -108,14 +106,6 @@ class Model:
         logger.info(
             f"The complete dataset has {len(self.df)} entries (before removing data)."
         )
-
-        if self.one_alert_per_stock:
-            logger.info("You have selected to only keep one alert per stock ID")
-            logger.info(f"Initial length of sample: {len(self.df)}")
-            self.df = self.get_random_stock_subsample(self.df)
-            logger.info(
-                f"Length of sample after keeping one alert per stock only: {len(self.df)}"
-            )
 
         if self.stage == "1":
             # Here we use the full training sample
@@ -213,6 +203,8 @@ class Model:
         """
         Do the training
         """
+        t_start = time.time()
+
         scale_pos_weight = (len(self.y_train) - np.sum(self.y_train)) / np.sum(
             self.y_train
         )
@@ -273,35 +265,35 @@ class Model:
         Run the actual training with the best estimator
         on the full training sample
         """
+        logger.info("--------------------------------------------")
         logger.info(
-            "\nNow fitting with the best estimator from the grid search. This will take time"
+            "\n\nNow fitting with the best estimator from the grid search. This will take time\n"
         )
+        logger.info("--------------------------------------------")
 
         best_estimator = grid_result.best_estimator_.fit(self.X_train, self.y_train)
 
         self.grid_result = grid_result
         self.best_estimator = best_estimator
 
-        if self.one_alert_per_stock:
-            outpath_grid = os.path.join(
-                self.model_dir,
-                f"grid_result_niter_{self.n_iter}_one_alert_per_stock",
-            )
-            outpath_model = os.path.join(
-                self.model_dir,
-                f"model_stage_{self.stage}_niter_{self.n_iter}_one_alert_per_stock",
-            )
-        else:
-            outpath_grid = os.path.join(
-                self.model_dir, f"grid_result_niter_{self.n_iter}_all_alerts"
-            )
-            outpath_model = os.path.join(
-                self.model_dir,
-                f"model_stage_{self.stage}_niter_{self.n_iter}_all_alerts",
-            )
+        outpath_grid = os.path.join(
+            self.model_dir,
+            f"grid_result_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}",
+        )
+        outpath_model = os.path.join(
+            self.model_dir,
+            f"model_stage_{self.stage}_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}",
+        )
 
         joblib.dump(grid_result, outpath_grid)
-        best_estimator.save_model(fname=outpath_model)
+        joblib.dump(best_estimator, outpath_model)
+
+        t_end = time.time()
+
+        logger.info("------------------------------------")
+        logger.info("           FITTING DONE             ")
+        logger.info(f"  This took {(t_end-t_start)/60} minutes")
+        logger.info("------------------------------------")
 
     def evaluate(self):
         """
@@ -309,14 +301,11 @@ class Model:
         """
 
         # Load the stuff
-        if self.one_alert_per_stock:
-            infile_grid = os.path.join(
-                self.model_dir, f"grid_result_niter_{self.n_iter}_one_alert_per_stock"
-            )
-        else:
-            infile_grid = os.path.join(
-                self.model_dir, f"grid_result_niter_{self.n_iter}_all_alerts"
-            )
+        infile_grid = os.path.join(
+            self.model_dir,
+            f"grid_result_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}",
+        )
+
         grid_result = joblib.load(infile_grid)
         best_estimator = grid_result.best_estimator_
 
@@ -370,18 +359,13 @@ class Model:
 
             timebin_mean_list.append(np.mean([timebin[0], timebin[1]]))
 
-        if self.one_alert_per_stock:
-            outfiles = [
-                os.path.join(
-                    self.plot_dir, f"{i}_niter_{self.n_iter}_one_alert_per_stock.png"
-                )
-                for i in ["precision", "recall", "aucpr"]
-            ]
-        else:
-            outfiles = [
-                os.path.join(self.plot_dir, f"{i}_niter_{self.n_iter}_all_alerts.png")
-                for i in ["precision", "recall", "aucpr"]
-            ]
+        outfiles = [
+            os.path.join(
+                self.plot_dir,
+                f"{i}_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}.png",
+            )
+            for i in ["precision", "recall", "aucpr"]
+        ]
 
         fig, ax = plt.subplots(figsize=(5, 5))
         ax.scatter(timebin_mean_list, precision_list)
@@ -443,15 +427,12 @@ class Model:
         ax.barh(cols, self.best_estimator.feature_importances_)
         plt.title("Feature importance", fontsize=25)
         plt.tight_layout()
-        if self.one_alert_per_stock:
-            outfile = os.path.join(
-                self.plot_dir,
-                f"feature_importance_{self.n_iter}_one_alert_per_stock.png",
-            )
-        else:
-            outfile = os.path.join(
-                self.plot_dir, f"feature_importance_{self.n_iter}_all_alerts.png"
-            )
+
+        outfile = os.path.join(
+            self.plot_dir,
+            f"feature_importance_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}.png",
+        )
+
         fig.savefig(
             outfile,
             dpi=300,
