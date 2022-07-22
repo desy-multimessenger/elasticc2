@@ -12,7 +12,7 @@ logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-for i, stage in enumerate(["2a", "2b"]):
+for i, stage in enumerate(["2a"]):
 
     m = Model(
         stage=stage,
@@ -22,5 +22,5 @@ for i, stage in enumerate(["2a", "2b"]):
         grid_search_sample_size=10000,
     )
     m.split_sample()
-    m.train()
+    # m.train()
     m.evaluate()

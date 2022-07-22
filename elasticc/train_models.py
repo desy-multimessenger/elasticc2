@@ -33,6 +33,8 @@ class Model:
     ) -> None:
 
         # super(Model, self).__init__()  # is this really needed ?
+        # It's the default in sublime when creating a new class, so
+        # I threw it in for good measure :-)
         self.stage = stage
         self.path_to_trainingset = path_to_trainingset
         self.n_iter = n_iter
