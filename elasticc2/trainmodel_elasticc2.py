@@ -290,7 +290,7 @@ class XgbModel:
             timebin_mean_list.append(np.mean([timebin[0], timebin[1]]))
 
         outfiles = [
-            self.plot_dir / f"{i}_.pdf" for i in ["precision", "recall", "aucpr"]
+            self.plot_dir / f"{i}.pdf" for i in ["precision", "recall", "aucpr"]
         ]
 
         fig, ax = plt.subplots(figsize=(5, 5))
