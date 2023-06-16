@@ -7,7 +7,9 @@ Useful links:
 - [Data](https://syncandshare.desy.de/index.php/s/JpfTgWtrC5QDJK7)
 
 ## Setup
-`poetry install`
+- Download the data folder above
+- set the environment variable `ELASTICCDATA` to match the download destination
+- `git clone` this dir, `cd` into it and run `poetry install`
 
 ## Test
 Run `demo_elasticc2.py`
