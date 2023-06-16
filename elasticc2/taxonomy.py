@@ -197,15 +197,29 @@ class TaxBase(ConvAttr):
 
         return ids
 
-    def get_all(self, level):
-        ids = list()
+    def ids_from_keys(self, keys):
+        ids = []
         for f in dataclasses.fields(self):
             val = getattr(self, f.name)
+
             if isinstance(val, TaxBase):
-                if val.level == level:
+                if val.name in keys:
                     ids.append(val.id)
                 else:
-                    pass
+                    ids.extend(val.ids_from_keys(keys))
+        return ids
+
+    def keys_from_ids(self, ids):
+        keys = []
+        for f in dataclasses.fields(self):
+            val = getattr(self, f.name)
+
+            if isinstance(val, TaxBase):
+                if val.id in ids:
+                    keys.append(val.name)
+                else:
+                    keys.extend(val.keys_from_ids(ids))
+        return keys
 
 
 # Hard-code taxonomy classes
