@@ -5,6 +5,7 @@ We now use this for the first stage of classification for the ELAsTiCC2 challeng
 Useful links:
 - [ELAsTiCC documentation](https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/)
 - [Data](https://syncandshare.desy.de/index.php/s/JpfTgWtrC5QDJK7)
+- [Taxonomy](https://github.com/LSSTDESC/elasticc/blob/main/taxonomy/taxonomy.ipynb)
 
 ## Setup
 - Download the data folder above
