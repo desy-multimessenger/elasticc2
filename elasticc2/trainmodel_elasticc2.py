@@ -327,6 +327,8 @@ class XgbModel:
 
         self.plot_confusion(y_true=y_true, y_pred=y_pred)
         self.plot_confusion(y_true=y_true, y_pred=y_pred, normalize="all")
+        self.plot_confusion(y_true=y_true, y_pred=y_pred, normalize="pred")
+        self.plot_confusion(y_true=y_true, y_pred=y_pred, normalize="true")
 
     def get_optimal_bins(self, nbins=20):
         """

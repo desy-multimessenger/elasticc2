@@ -34,36 +34,37 @@ cl_inv = config["classes_inv"]
 # max_taxlength = 10000
 
 # # Train classifier to distinguish KN from ... everything else
-# pos_tax = ["kn"]
-# cl_all = cl_inv["all"]
-# cl_all.remove(cl_inv["kn"])
-# neg_tax = cl_all
+pos_tax = [cl_inv["kn"]]
+cl_all = cl_inv["all"]
+cl_all.remove(cl_inv["kn"])
+neg_tax = cl_all
+
 
 # max_taxlength = 10000
 # To use files where alerts with more than 10 det have been removed uncomment below
 # path_to_featurefiles = '/home/jnordin/data/elasticc2/trainset_early_max10'
 
 # Train classifier to separate recurrent from non-recurrent alerts using all alerts
-pos_tax = [
-    2221,
-    2222,
-    2223,
-    2224,
-    2225,
-    2226,
-    2231,
-    2232,
-    2233,
-    2234,
-    2235,
-    2241,
-    2242,
-    2243,
-    2244,
-    2245,
-    2246,
-]
-neg_tax = [2321, 2322, 2323, 2324, 2325, 2326, 2331, 2332]
+# pos_tax = [
+#     2221,
+#     2222,
+#     2223,
+#     2224,
+#     2225,
+#     2226,
+#     2231,
+#     2232,
+#     2233,
+#     2234,
+#     2235,
+#     2241,
+#     2242,
+#     2243,
+#     2244,
+#     2245,
+#     2246,
+# ]
+# neg_tax = [2321, 2322, 2323, 2324, 2325, 2326, 2331, 2332]
 max_taxlength = 10000
 
 model = XgbModel(
