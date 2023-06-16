@@ -108,6 +108,7 @@ class XgbModel:
             )
 
         fulldf = None
+
         for fname in files:
             taxclass = int(re.search("features_(\d+)_ndet", fname)[1])
             if not taxclass in self.pos_tax + self.neg_tax:
@@ -123,6 +124,7 @@ class XgbModel:
 
             df = df.drop(columns=["stock"])
             df["target"] = taxclass in self.pos_tax
+
             df = df.fillna(np.nan)
 
             if fulldf is None:
@@ -140,10 +142,22 @@ class XgbModel:
         """
         raise ("NotImplementedError")
 
+    def has_enough_data(self):
+        if (instances := self.df_train["target"].sum()) < 10:
+            logger.warning(
+                f"Your training data contains less than 10 instances of {self.pos_tax} ({instances})"
+            )
+            return False
+        else:
+            return True
+
     def train(self):
         """
         Do the training
         """
+        if not self.has_enough_data():
+            return None
+
         t_start = time.time()
 
         y_train = self.df_train["target"]
@@ -245,7 +259,8 @@ class XgbModel:
         """
         Evaluate the model
         """
-
+        if not self.has_enough_data():
+            return None
         # Load the stuff
         infile_grid = self.model_dir / f"grid_result"
 
