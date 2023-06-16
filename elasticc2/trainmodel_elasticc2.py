@@ -78,8 +78,8 @@ class XgbModel:
         """
         Create the directories required
         """
-        self.plot_dir = self.plotdir / "plots"
-        self.model_dir = self.plotdir / "models"
+        self.plot_dir = self.plotdir / "plots" / f"{self.pos_name}_vs_{self.neg_name}"
+        self.model_dir = self.plotdir / "models" / f"{self.pos_name}_vs_{self.neg_name}"
 
         for path in [self.plot_dir, self.model_dir]:
             path.mkdir(exist_ok=True, parents=True)
