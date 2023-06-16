@@ -69,6 +69,12 @@ setups = {
         "neg_tax": tax.rec.periodic.get_ids(exclude=[tax.rec.periodic.rrlyrae.id]),
         "neg_name": "other_stars",
     },
+    9: {
+        "key": "ulens+mdwarf",
+        "pos_tax": tax.ids_from_keys(["ulens", "mdwarf"]),
+        "neg_tax": tax.rec.periodic.get_ids(),
+        "neg_name": "periodic_star",
+    },
 }
 
 
@@ -92,6 +98,6 @@ def run_setup(num: int):
     model.evaluate()
 
 
-for setup in [6, 7, 8]:
+for setup in [9]:
     max_taxlength = 10000
     run_setup(setup)
