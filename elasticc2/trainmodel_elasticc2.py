@@ -76,7 +76,12 @@ class XgbModel:
             self.cols_to_use.remove("target")
 
         logger.info(
-            f"Training\n{tax.keys_from_ids(self.pos_tax)}\nvs.\n{tax.keys_from_ids(self.neg_tax)}"
+            f"\n-------------------"
+            f"\nTraining\n"
+            f"{self.pos_name} ({', '.join(tax.keys_from_ids(self.pos_tax))})"
+            f"\n--- VS. ---\n"
+            f"{self.neg_name} ({', '.join(tax.keys_from_ids(self.neg_tax))})\n"
+            f"-------------------"
         )
 
     def create_dirs(self):
