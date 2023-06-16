@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd
 import xgboost as xgb
+from elasticc2.taxonomy import var as tax
 from sklearn import metrics  # type: ignore
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import RandomizedSearchCV  # type: ignore
@@ -73,6 +74,10 @@ class XgbModel:
             # Use training data columns (except target)
             self.cols_to_use = list(self.df_train.columns)
             self.cols_to_use.remove("target")
+
+        logger.info(
+            f"Training\n{tax.keys_from_ids(self.pos_tax)}\nvs.\n{tax.keys_from_ids(self.neg_tax)}"
+        )
 
     def create_dirs(self):
         """
