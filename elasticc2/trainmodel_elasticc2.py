@@ -8,18 +8,15 @@ import re
 import time
 from pathlib import Path
 
-import joblib
-import matplotlib.pyplot as plt
+import joblib  # type: ignore
+import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-from sklearn import metrics
-from sklearn.model_selection import (
-    RandomizedSearchCV,
-    StratifiedKFold,
-    train_test_split,
-)
-from sklearn.utils import shuffle
+from sklearn import metrics  # type: ignore
+from sklearn.model_selection import RandomizedSearchCV  # type: ignore
+from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.utils import shuffle  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +32,6 @@ class XgbModel:
     Assumes data structure from process_features[_step3].py
 
     Will glob all files in target directory.
-
-
     """
 
     def __init__(
@@ -59,8 +54,7 @@ class XgbModel:
         self.random_state = random_state
         self.grid_search_sample_size = grid_search_sample_size
         self.plotdir = Path(plotdir)
-        self.readlog = []
-        self.random_state: int = 42
+        self.readlog: list = []
 
         self.create_dirs()
         self.df_train = self.read_featuredata(training=True)
@@ -76,7 +70,7 @@ class XgbModel:
 
     def create_dirs(self):
         """
-        create all dirs for stage
+        Create the directories required
         """
         self.plot_dir = self.plotdir / "plots"
         self.model_dir = self.plotdir / "models"
@@ -87,7 +81,6 @@ class XgbModel:
     def read_featuredata(self, training=True):
         """
         Parse file directory for files belonging to desired input and output data.
-
         """
         if not self.path_to_featurefiles.is_dir():
             import tarfile
