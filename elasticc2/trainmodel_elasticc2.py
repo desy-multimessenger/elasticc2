@@ -2,6 +2,7 @@
 # License: BSD-3-Clause
 
 import glob
+import itertools
 import logging
 import os
 import re
@@ -14,6 +15,7 @@ import numpy as np
 import pandas as pd
 import xgboost as xgb
 from sklearn import metrics  # type: ignore
+from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import RandomizedSearchCV  # type: ignore
 from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.utils import shuffle  # type: ignore
@@ -295,7 +297,7 @@ class XgbModel:
 
         outfiles = [
             self.plot_dir
-            / f"{i}_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}.png"
+            / f"{i}_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}.pdf"
             for i in ["precision", "recall", "aucpr"]
         ]
 
@@ -323,10 +325,19 @@ class XgbModel:
         fig.savefig(outfiles[2], dpi=300)
         plt.close()
 
+        # now we plot the confusion matrix
+        self.df_test_subsample
+
+        features = self.df_test_subsample[self.cols_to_use]
+        target = self.df_test_subsample.target
+        y_true = target.replace({True: 1, False: 0}).values
+        y_pred = best_estimator.predict(features)
+
+        self.plot_confusion(y_true=y_true, y_pred=y_pred)
+
     def get_optimal_bins(self, nbins=20):
         """
-        Determine optimal time bins (requirement: same number
-        of alerts per bin). This cannot always be fulfilled, so duplicates=drop is passed.
+        Determine optimal time bins (requirement: same number of alerts per bin). This cannot always be fulfilled, so duplicates=drop is passed.
         """
         out, bins = pd.qcut(
             self.df_test_subsample.ndet.values, nbins, retbins=True, duplicates="drop"
@@ -360,10 +371,67 @@ class XgbModel:
 
         outfile = (
             self.plot_dir
-            / f"feature_importance_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}.png"
+            / f"feature_importance_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}.pdf"
         )
 
         fig.savefig(
             outfile,
             dpi=300,
         )
+
+    def plot_confusion(
+        self, y_true: np.ndarray, y_pred: np.ndarray, normalize: str = None
+    ):
+        """
+        Plot the confusion matrix for the binary classification
+        """
+        fig, ax = plt.subplots(figsize=(4, 4))
+        cm = confusion_matrix(y_true=y_true, y_pred=y_pred, normalize=normalize)
+
+        if normalize is not None:
+            cmlabel = "Fraction of objects"
+            fmt = ".2f"
+            vmax = 1
+        else:
+            vmax = cm.max()
+            cmlabel = "Nr. of objects"
+            fmt = ".0f"
+
+        im = plt.imshow(
+            cm, interpolation="nearest", cmap=plt.cm.Blues, vmin=0, vmax=vmax
+        )
+
+        outpath = (
+            self.plot_dir
+            / f"confusion_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}.pdf"
+        )
+
+        thresh = cm.max() / 2.0
+
+        for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+            plt.text(
+                j,
+                i,
+                format(cm[i, j], fmt),
+                ha="center",
+                va="center",
+                color="white" if cm[i, j] > thresh else "black",
+            )
+
+        plt.ylabel("True Type", fontsize=12)
+        plt.xlabel("Predicted Type", fontsize=12)
+
+        # Make a colorbar that is lined up with the plot
+        from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+        ax = plt.gca()
+        divider = make_axes_locatable(ax)
+        cax = divider.append_axes("right", size="4%", pad=0.25)
+        cbar = plt.colorbar(im, cax=cax)
+        cbar.set_label(label=cmlabel, fontsize=12)
+
+        plt.tight_layout()
+        plt.savefig(outpath, dpi=300)
+        logger.info(f"We saved the evaluation to {outpath}")
+
+        plt.close()

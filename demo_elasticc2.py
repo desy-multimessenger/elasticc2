@@ -43,7 +43,6 @@ cl_inv = config["classes_inv"]
 
 # Train classifier to separate recurrent from non-recurrent alerts using all alerts
 pos_tax = [
-    2210,
     2221,
     2222,
     2223,
@@ -64,7 +63,6 @@ pos_tax = [
 ]
 neg_tax = [2321, 2322, 2323, 2324, 2325, 2326, 2331, 2332]
 max_taxlength = 1000
-
 
 model = XgbModel(
     pos_tax=pos_tax,
