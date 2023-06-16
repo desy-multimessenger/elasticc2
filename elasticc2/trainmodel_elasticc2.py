@@ -6,6 +6,7 @@ import logging
 import os
 import re
 import time
+from pathlib import Path
 
 import joblib
 import matplotlib.pyplot as plt
@@ -42,22 +43,22 @@ class XgbModel:
         self,
         pos_tax: list[int],
         neg_tax: list[int],
-        path_to_featurefiles: str,
+        path_to_featurefiles: str | Path,
         max_taxlength: int = -1,
         n_iter: int = 1,
         random_state: int = 42,
-        plotdir: str = ".",
+        plotdir: str | Path = ".",
         grid_search_sample_size: int = 10000,
         cols_to_use: list[str] = [],
     ) -> None:
         self.pos_tax = pos_tax
         self.neg_tax = neg_tax
-        self.path_to_featurefiles = path_to_featurefiles
+        self.path_to_featurefiles = Path(path_to_featurefiles)
         self.max_taxlength = max_taxlength
         self.n_iter = n_iter
         self.random_state = random_state
         self.grid_search_sample_size = grid_search_sample_size
-        self.plotdir = plotdir
+        self.plotdir = Path(plotdir)
         self.readlog = []
         self.random_state: int = 42
 
@@ -77,26 +78,34 @@ class XgbModel:
         """
         create all dirs for stage
         """
-        self.plot_dir = os.path.join(self.plotdir, "plots")
-        self.model_dir = os.path.join(self.plotdir, "models")
+        self.plot_dir = self.plotdir / "plots"
+        self.model_dir = self.plotdir / "models"
 
         for path in [self.plot_dir, self.model_dir]:
-            if not os.path.exists(path):
-                os.makedirs(path)
+            path.mkdir(exist_ok=True, parents=True)
 
     def read_featuredata(self, training=True):
         """
         Parse file directory for files belonging to desired input and output data.
 
         """
-        print(self.path_to_featurefiles)
+        if not self.path_to_featurefiles.is_dir():
+            import tarfile
+
+            logger.info(
+                f"{self.path_to_featurefiles}.tar.xz has not yet been extracted, doing that now. Extracting to {self.path_to_featurefiles.parents[0]}"
+            )
+            with tarfile.open(f"{self.path_to_featurefiles}.tar.xz") as f:
+                f.extractall(path=self.path_to_featurefiles.parents[0])
+            logger.info("Extraction done")
+
         if training:
             files = glob.glob(
-                os.path.join(self.path_to_featurefiles, "features*_train.parquet")
+                str(self.path_to_featurefiles / "features*_train.parquet")
             )
         else:
             files = glob.glob(
-                os.path.join(self.path_to_featurefiles, "features*_validate.parquet")
+                str(self.path_to_featurefiles / "features*_validate.parquet")
             )
 
         fulldf = None
@@ -214,13 +223,14 @@ class XgbModel:
         self.grid_result = grid_result
         self.best_estimator = best_estimator
 
-        outpath_grid = os.path.join(
-            self.model_dir,
-            f"grid_result_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}",
+        outpath_grid = (
+            self.model_dir
+            / f"grid_result_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}"
         )
-        outpath_model = os.path.join(
-            self.model_dir,
-            f"model_pos{'-'.join(map(str,self.pos_tax))}_neg{'-'.join(map(str,self.neg_tax))}_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}",
+
+        outpath_model = (
+            self.model_dir
+            / f"model_pos{'-'.join(map(str,self.pos_tax))}_neg{'-'.join(map(str,self.neg_tax))}_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}"
         )
 
         joblib.dump(grid_result, outpath_grid)
@@ -239,9 +249,9 @@ class XgbModel:
         """
 
         # Load the stuff
-        infile_grid = os.path.join(
-            self.model_dir,
-            f"grid_result_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}",
+        infile_grid = (
+            self.model_dir
+            / f"grid_result_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}"
         )
 
         grid_result = joblib.load(infile_grid)
@@ -301,10 +311,8 @@ class XgbModel:
             timebin_mean_list.append(np.mean([timebin[0], timebin[1]]))
 
         outfiles = [
-            os.path.join(
-                self.plot_dir,
-                f"{i}_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}.png",
-            )
+            self.plot_dir
+            / f"{i}_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}.png"
             for i in ["precision", "recall", "aucpr"]
         ]
 
@@ -370,9 +378,9 @@ class XgbModel:
         plt.title("Feature importance", fontsize=25)
         plt.tight_layout()
 
-        outfile = os.path.join(
-            self.plot_dir,
-            f"feature_importance_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}.png",
+        outfile = (
+            self.plot_dir
+            / f"feature_importance_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}.png"
         )
 
         fig.savefig(

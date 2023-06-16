@@ -14,7 +14,6 @@ basedir = os.environ.get("ELASTICCDATA")
 if basedir is None:
     raise ValueError("Please set an environment-variable for 'ELASTICCDATA'")
 path_to_featurefiles = Path(basedir) / "feature_extraction" / "trainset_all_max3"
-print(path_to_featurefiles)
 
 # Train classifer to distinguish SNe Ia (2222) from SNIbc and SNII (2223,224)
 # Using a subset of max 10000 rows from the feature filws
