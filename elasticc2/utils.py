@@ -47,4 +47,7 @@ def load_config():
         2332,
     ]
 
+    for key, val in config["classes_inv"].items():
+        config[key] = [val]
+
     return config

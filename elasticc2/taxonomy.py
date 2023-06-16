@@ -184,23 +184,16 @@ class TaxBase(ConvAttr):
     name: str
     level: int
 
-    def get_ids(self, level):
-        # ids = [
-        #     val.id
-        #     for f in dataclasses.fields(self)
-        #     if isinstance(val := (getattr(self, f.name)), TaxBase)
-        # ]
-
+    def get_ids(self, exclude=[], level=4):
         ids = []
         for f in dataclasses.fields(self):
             val = getattr(self, f.name)
 
             if isinstance(val, TaxBase):
-                if val.level == level:
+                if val.level == level and val.id not in exclude:
                     ids.append(val.id)
                 else:
-                    ids.extend(val.get_ids(level))
-                # print(val.name, val.level, ids)
+                    ids.extend(val.get_ids(exclude=exclude, level=level))
 
         return ids
 
