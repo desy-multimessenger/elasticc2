@@ -16,8 +16,7 @@ classes:
   2244: ilot
   2245: cart
   2246: pisn
-  2310: recurring
-  2320: periodic
+  2321: pother
   2322: cepheid
   2323: rrlyrae
   2324: deltascuti
@@ -25,11 +24,6 @@ classes:
   2326: lpv
   2331: nonperiodic
   2332: agn
-
-classes0:
-  0: meta
-  1: static
-  2: variable
 
 recurring: 
   - 2322

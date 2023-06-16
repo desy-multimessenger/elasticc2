@@ -19,25 +19,31 @@ def load_config():
     classes_inv = {v: k for k, v in classes.items()}
     config["classes_inv"] = classes_inv
 
-    config["classes_inv"]["all"] = [
+    config["all"] = [
+        2221,
         2222,
         2223,
         2224,
         2225,
         2226,
+        2231,
         2232,
         2233,
         2234,
         2235,
+        2241,
         2242,
         2243,
         2244,
         2245,
         2246,
+        2321,
         2322,
         2323,
         2324,
         2325,
+        2326,
+        2331,
         2332,
     ]
 
