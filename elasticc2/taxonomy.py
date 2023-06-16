@@ -49,6 +49,7 @@ https://github.com/LSSTDESC/elasticc/blob/main/taxonomy/taxonomy.ipynb
 """
 
 import dataclasses
+from pprint import pformat
 from typing import Any
 
 
@@ -239,6 +240,14 @@ class TaxBase(ConvAttr):
                 else:
                     keys.extend(val.keys_from_ids(ids))
         return keys
+
+    def to_dict(self) -> dict:
+        """Convert dataclass to dictionary"""
+        return dataclasses.asdict(self)
+
+    def info(self) -> None:
+        """Pretty-print dataclass contents"""
+        print(pformat(self.to_dict(), sort_dicts=False))
 
 
 # Hard-code taxonomy classes
