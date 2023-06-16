@@ -184,7 +184,14 @@ class TaxBase(ConvAttr):
     name: str
     level: int
 
-    def get_ids(self, exclude=[], level=4):
+    def get_ids(self, exclude: list[int] | int = [], level: int = 4) -> list[int]:
+        """
+        Returns a list of class IDs based on specified taxonomy level. IDs provided by
+        the exclude parameter are ignored in the output.
+        """
+        if not isinstance(exclude, list):
+            exclude = [exclude]
+
         ids = []
         for f in dataclasses.fields(self):
             val = getattr(self, f.name)
@@ -197,7 +204,13 @@ class TaxBase(ConvAttr):
 
         return ids
 
-    def ids_from_keys(self, keys):
+    def ids_from_keys(self, keys: list[str] | str) -> list[int]:
+        """
+        Returns list of class IDs based on a set keys
+        """
+        if not isinstance(keys, list):
+            keys = [keys]
+
         ids = []
         for f in dataclasses.fields(self):
             val = getattr(self, f.name)
@@ -209,7 +222,13 @@ class TaxBase(ConvAttr):
                     ids.extend(val.ids_from_keys(keys))
         return ids
 
-    def keys_from_ids(self, ids):
+    def keys_from_ids(self, ids: int | list[int]) -> list[str]:
+        """
+        Returns a list of class keys based on a set of IDs
+        """
+        if not isinstance(ids, list):
+            ids = [ids]
+
         keys = []
         for f in dataclasses.fields(self):
             val = getattr(self, f.name)
