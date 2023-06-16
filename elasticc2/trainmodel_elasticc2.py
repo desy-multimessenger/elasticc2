@@ -42,7 +42,7 @@ class XgbModel:
         neg_tax: list[int],
         path_to_featurefiles: str | Path,
         max_taxlength: int = -1,
-        n_iter: int = 1,
+        n_iter: int = 5,
         random_state: int = 42,
         plotdir: str | Path = ".",
         grid_search_sample_size: int = 10000,
@@ -222,7 +222,7 @@ class XgbModel:
 
         outpath_model = (
             self.model_dir
-            / f"model_pos{'-'.join(map(str,self.pos_tax))}_neg{'-'.join(map(str,self.neg_tax))}_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}"
+            / f"model_pos{'-'.join(map(str,self.pos_tax))}_neg{'-'.join(map(str,self.neg_tax))}_nsample_{self.grid_search_sample_size}"
         )
 
         joblib.dump(grid_result, outpath_grid)
@@ -244,8 +244,7 @@ class XgbModel:
 
         # Load the stuff
         infile_grid = (
-            self.model_dir
-            / f"grid_result_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}"
+            self.model_dir / f"grid_result_nsample_{self.grid_search_sample_size}"
         )
 
         grid_result = joblib.load(infile_grid)
@@ -296,8 +295,7 @@ class XgbModel:
             timebin_mean_list.append(np.mean([timebin[0], timebin[1]]))
 
         outfiles = [
-            self.plot_dir
-            / f"{i}_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}.pdf"
+            self.plot_dir / f"{i}_nsample_{self.grid_search_sample_size}.pdf"
             for i in ["precision", "recall", "aucpr"]
         ]
 
@@ -372,7 +370,7 @@ class XgbModel:
 
         outfile = (
             self.plot_dir
-            / f"feature_importance_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}.pdf"
+            / f"feature_importance_nsample_{self.grid_search_sample_size}.pdf"
         )
 
         fig.savefig(
@@ -404,7 +402,7 @@ class XgbModel:
 
         outpath = (
             self.plot_dir
-            / f"confusion_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}_norm_{normalize}.pdf"
+            / f"confusion_nsample_{self.grid_search_sample_size}_norm_{normalize}.pdf"
         )
 
         thresh = cm.max() / 2.0
