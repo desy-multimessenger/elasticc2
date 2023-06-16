@@ -1,10 +1,10 @@
-# ml_workshop
+# elasticc2
 
-We now use this for the first stage of classification for the ELAsTiCC challenge.
+We now use this for the first stage of classification for the ELAsTiCC2 challenge.
 
 Useful links:
 - [ELAsTiCC documentation](https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/)
-- [Data](https://syncandshare.desy.de/index.php/s/LLzErE9QgLpNFLZ)
+- [Data](https://syncandshare.desy.de/index.php/s/JpfTgWtrC5QDJK7)
 
 How To:
 ```python
