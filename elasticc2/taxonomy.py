@@ -115,6 +115,65 @@ class DataClassUnpack:
         return data_class(**arg_dict_filtered)
 
 
+def set_dataclass_value(
+    obj: Any, field_name: str, new_value: Any, force: bool = False
+) -> Any:
+    """
+    Recursively search for a field in a dataclass object and change its value to
+    a new value.
+
+    Parameters
+    ----------
+    obj : Any
+        The input dataclass object to modify.
+    field_name : str
+        The name of the field to modify.
+    new_value : Any
+        The new value to set the field to.
+    force : bool
+        Modify value despite the dataclass being set to frozen
+
+    Returns
+    -------
+    Any
+        A modified dataclass object with the specified field changed to the new value.
+    """
+    # If the input is not a dataclass, return it as is
+    if not dataclasses.is_dataclass(obj):
+        return obj
+
+    # Set the value of the field to the new value
+    if obj.__dataclass_params__.frozen and force:
+        object.__setattr__(obj, field_name, new_value)
+    else:
+        setattr(obj, field_name, new_value)
+
+    # Recursively modify the nested dataclass objects
+    # Loop over fields
+    for f in dataclasses.fields(obj):
+        # Gets field
+        inner_obj = getattr(obj, f.name)
+
+        # If inner field is a dataclass go recursive
+        if dataclasses.is_dataclass(inner_obj):
+            if obj.__dataclass_params__.frozen and force:
+                object.__setattr__(
+                    obj,
+                    f.name,
+                    set_dataclass_value(inner_obj, field_name, new_value, force),
+                )
+            else:
+                setattr(
+                    obj,
+                    f.name,
+                    set_dataclass_value(inner_obj, field_name, new_value, force),
+                )
+        else:
+            continue
+
+    return obj
+
+
 @dataclasses.dataclass(frozen=True)
 class TaxBase(ConvAttr):
     """
@@ -125,21 +184,35 @@ class TaxBase(ConvAttr):
     name: str
     level: int
 
-    def get_ids(self):
-        ids = [
-            val.id
-            for f in dataclasses.fields(self)
-            if isinstance(val := (getattr(self, f.name)), TaxBase)
-        ]
-        """
+    def get_ids(self, level):
+        # ids = [
+        #     val.id
+        #     for f in dataclasses.fields(self)
+        #     if isinstance(val := (getattr(self, f.name)), TaxBase)
+        # ]
+
+        ids = []
+        for f in dataclasses.fields(self):
+            val = getattr(self, f.name)
+
+            if isinstance(val, TaxBase):
+                if val.level == level:
+                    ids.append(val.id)
+                else:
+                    ids.extend(val.get_ids(level))
+                # print(val.name, val.level, ids)
+
+        return ids
+
+    def get_all(self, level):
         ids = list()
         for f in dataclasses.fields(self):
             val = getattr(self, f.name)
             if isinstance(val, TaxBase):
-                ids.append(val.id)
-        """
-
-        return ids
+                if val.level == level:
+                    ids.append(val.id)
+                else:
+                    pass
 
 
 # Hard-code taxonomy classes
@@ -181,6 +254,7 @@ class NRec(TaxBase):
     nrecother: TaxBase
     sn: SN
     fast: Fast
+    long: Long
 
 
 # 2300 Recurring
@@ -188,7 +262,7 @@ class NRec(TaxBase):
 
 @dataclasses.dataclass(frozen=True)
 class Periodic(TaxBase):
-    periodicother: TaxBase
+    pother: TaxBase
     ceph: TaxBase
     rrlyrae: TaxBase
     deltasc: TaxBase
@@ -198,7 +272,7 @@ class Periodic(TaxBase):
 
 @dataclasses.dataclass(frozen=True)
 class NPeriodic(TaxBase):
-    nperiodicother: TaxBase
+    npother: TaxBase
     agn: TaxBase
 
 
@@ -278,12 +352,12 @@ long = Long(
     id=2240,
     name="long",
     level=3,
-    longother=TaxBase(2240, "longother", 4),
-    slsn=TaxBase(2240, "slsn", 4),
-    tde=TaxBase(2240, "tde", 4),
-    ilot=TaxBase(2240, "ilot", 4),
-    cart=TaxBase(2240, "cart", 4),
-    pisn=TaxBase(2240, "pisn", 4),
+    longother=TaxBase(2241, "longother", 4),
+    slsn=TaxBase(2242, "slsn", 4),
+    tde=TaxBase(2243, "tde", 4),
+    ilot=TaxBase(2244, "ilot", 4),
+    cart=TaxBase(2245, "cart", 4),
+    pisn=TaxBase(2246, "pisn", 4),
 )
 
 nrec = NRec(
@@ -293,6 +367,7 @@ nrec = NRec(
     nrecother=nrecother,
     sn=sn,
     fast=fast,
+    long=long,
 )
 
 # 2300 Recurring
@@ -303,7 +378,7 @@ periodic = Periodic(
     id=2320,
     name="periodic",
     level=3,
-    periodicother=TaxBase(2321, "periodicother", 4),
+    pother=TaxBase(2321, "pother", 4),
     ceph=TaxBase(2322, "ceph", 4),
     rrlyrae=TaxBase(2323, "rrlyrae", 4),
     deltasc=TaxBase(2324, "deltasc", 4),
@@ -315,7 +390,7 @@ nperiodic = NPeriodic(
     id=2330,
     name="nperiodic",
     level=3,
-    nperiodicother=TaxBase(2331, "nperiodicother", 4),
+    npother=TaxBase(2331, "npother", 4),
     agn=TaxBase(2332, "agn", 4),
 )
 
