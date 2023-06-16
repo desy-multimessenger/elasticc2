@@ -1,28 +1,30 @@
 #!/usr/bin/env python3
 # License: BSD-3-Clause
 
-import os, re
 import glob
 import logging
-import joblib
+import os
+import re
 import time
+
+import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xgboost as xgb
 from sklearn import metrics
-from sklearn.utils import shuffle
 from sklearn.model_selection import (
     RandomizedSearchCV,
     StratifiedKFold,
     train_test_split,
 )
+from sklearn.utils import shuffle
 
 logger = logging.getLogger(__name__)
 
 
 class XgbModel:
-    """ 
+    """
     Version of Model which assumes datasets have been preprocessed as follows:
     - Combining z, galcol info with features.
     - Limit to det, time ranges.
@@ -30,10 +32,10 @@ class XgbModel:
     - Divide into training and validation samples.
     - Stored as parquet.
     Assumes data structure from process_features[_step3].py
-    
+
     Will glob all files in target directory.
-    
-     
+
+
     """
 
     def __init__(
@@ -41,14 +43,13 @@ class XgbModel:
         pos_tax: list[int],
         neg_tax: list[int],
         path_to_featurefiles: str,
-        max_taxlength: int = -1,  
+        max_taxlength: int = -1,
         n_iter: int = 1,
         random_state: int = 42,
-        plotdir: str = '.',
+        plotdir: str = ".",
         grid_search_sample_size: int = 10000,
-        cols_to_use: list[str] = []
+        cols_to_use: list[str] = [],
     ) -> None:
-
         self.pos_tax = pos_tax
         self.neg_tax = neg_tax
         self.path_to_featurefiles = path_to_featurefiles
@@ -64,14 +65,13 @@ class XgbModel:
         self.df_train = self.read_featuredata(training=True)
         self.df_val = self.read_featuredata(training=False)
 
-        if len(cols_to_use)>0:
+        if len(cols_to_use) > 0:
             # Use input features
             self.cols_to_use = cols_to_use
         else:
-            # Use training data columns (except target) 
+            # Use training data columns (except target)
             self.cols_to_use = list(self.df_train.columns)
-            self.cols_to_use.remove('target')
-
+            self.cols_to_use.remove("target")
 
     def create_dirs(self):
         """
@@ -84,54 +84,54 @@ class XgbModel:
             if not os.path.exists(path):
                 os.makedirs(path)
 
-
-
     def read_featuredata(self, training=True):
         """
         Parse file directory for files belonging to desired input and output data.
-                
-        """
-        if training:
-	        files = glob.glob( os.path.join(self.path_to_featurefiles,"features*_train.parquet") ) 
-        else:
-	        files = glob.glob( os.path.join(self.path_to_featurefiles,"features*_validate.parquet") ) 
 
-	
+        """
+        print(self.path_to_featurefiles)
+        if training:
+            files = glob.glob(
+                os.path.join(self.path_to_featurefiles, "features*_train.parquet")
+            )
+        else:
+            files = glob.glob(
+                os.path.join(self.path_to_featurefiles, "features*_validate.parquet")
+            )
+
         fulldf = None
         for fname in files:
-	        taxclass = int( re.search("features_(\d+)_ndet", fname)[1] )
-	        if not taxclass in self.pos_tax+self.neg_tax:
-	                continue
-		
-	        df = pd.read_parquet(fname)
-	        inrows = df.shape[0]
+            taxclass = int(re.search("features_(\d+)_ndet", fname)[1])
+            if not taxclass in self.pos_tax + self.neg_tax:
+                continue
 
-	        # Limit rows per class
-	        if self.max_taxlength>0 and inrows>self.max_taxlength:
-		        df = df.sample(n=self.max_taxlength, random_state=self.random_state)
-	        userows = df.shape[0]
-		
-	        df = df.drop(columns=["stock"])
-	        df['target'] = (taxclass in self.pos_tax)
-#	        df = df.replace({np.nan: None})
-	        df = df.fillna(np.nan)
-		
-	        if fulldf is None:
-	                fulldf = df
-	        else:
-	                fulldf = pd.concat([fulldf,df], ignore_index=True)
-	        self.readlog.append([taxclass, fname, inrows, userows])
-		
+            df = pd.read_parquet(fname)
+            inrows = df.shape[0]
+
+            # Limit rows per class
+            if self.max_taxlength > 0 and inrows > self.max_taxlength:
+                df = df.sample(n=self.max_taxlength, random_state=self.random_state)
+            userows = df.shape[0]
+
+            df = df.drop(columns=["stock"])
+            df["target"] = taxclass in self.pos_tax
+            #           df = df.replace({np.nan: None})
+            df = df.fillna(np.nan)
+
+            if fulldf is None:
+                fulldf = df
+            else:
+                fulldf = pd.concat([fulldf, df], ignore_index=True)
+            self.readlog.append([taxclass, fname, inrows, userows])
+
         return fulldf
 
     def plot_balance(self):
         """
         Look through the read archive for balance between classes.
-                
-        """
-        raise("NotImplementedError")
-		
 
+        """
+        raise ("NotImplementedError")
 
     def train(self):
         """
@@ -139,10 +139,12 @@ class XgbModel:
         """
         t_start = time.time()
 
-        y_train = self.df_train['target']
-        scale_pos_weight = (len(y_train) - np.sum(y_train)) / np.sum( y_train )
-        logger.info(f"Find scale weight {scale_pos_weight} from {np.sum(y_train)} pos out of {len(y_train)} rows.")
-        
+        y_train = self.df_train["target"]
+        scale_pos_weight = (len(y_train) - np.sum(y_train)) / np.sum(y_train)
+        logger.info(
+            f"Find scale weight {scale_pos_weight} from {np.sum(y_train)} pos out of {len(y_train)} rows."
+        )
+
         model = xgb.XGBClassifier(
             scale_pos_weight=scale_pos_weight,
             use_label_encoder=False,
@@ -193,8 +195,6 @@ class XgbModel:
             n=self.grid_search_sample_size, random_state=self.random_state + 5
         )
 
-
-
         grid_result = grid_search.fit(X_train_subset, y_train_subset)
 
         """
@@ -207,7 +207,9 @@ class XgbModel:
         )
         logger.info("--------------------------------------------")
 
-        best_estimator = grid_result.best_estimator_.fit(self.df_train[self.cols_to_use], y_train)
+        best_estimator = grid_result.best_estimator_.fit(
+            self.df_train[self.cols_to_use], y_train
+        )
 
         self.grid_result = grid_result
         self.best_estimator = best_estimator
@@ -257,14 +259,12 @@ class XgbModel:
         Now we cut the test sample so that only one datapoint
         per stock-ID survives
         """
-        #df_test_subsample = self.get_random_stock_subsample(self.df_val)
+        # df_test_subsample = self.get_random_stock_subsample(self.df_val)
         # self.df_test_subsample = df_test_subsample
         # With the new larger feature files we have now assumed that subselection has already been done.
         self.df_test_subsample = self.df_val
 
         logger.info(f"Best: {grid_result.best_score_} using {grid_result.best_params_}")
-
-
 
         # We get even sized binning (at least as far as possible)
         evaluation_bins, nbins = self.get_optimal_bins(nbins=14)
@@ -283,12 +283,12 @@ class XgbModel:
                 (self.df_test_subsample["ndet"] >= timebin[0])
                 & (self.df_test_subsample["ndet"] <= timebin[1])
             ]
-            
-            #X_test = df_test_bin.drop(columns=["class_short", "stock"])
-            #self.cols_to_use.append("stock")
-            
-#            y_test = df_test_bin.drop(columns=self.cols_to_use)
-#            features = X_test
+
+            # X_test = df_test_bin.drop(columns=["class_short", "stock"])
+            # self.cols_to_use.append("stock")
+
+            #            y_test = df_test_bin.drop(columns=self.cols_to_use)
+            #            features = X_test
             features = df_test_bin[self.cols_to_use]
             target = df_test_bin.target
 
@@ -362,9 +362,9 @@ class XgbModel:
         fig, ax = plt.subplots(figsize=(10, 21))
 
         cols = self.cols_to_use
-#        cols =  self.df_train.drop(columns=['target']).columns
+        #        cols =  self.df_train.drop(columns=['target']).columns
 
-        #cols.remove("stock")
+        # cols.remove("stock")
 
         ax.barh(cols, self.best_estimator.feature_importances_)
         plt.title("Feature importance", fontsize=25)
