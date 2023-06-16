@@ -6,7 +6,13 @@ Useful links:
 - [ELAsTiCC documentation](https://portal.nersc.gov/cfs/lsst/DESC_TD_PUBLIC/ELASTICC/)
 - [Data](https://syncandshare.desy.de/index.php/s/JpfTgWtrC5QDJK7)
 
-How To:
+## Setup
+`poetry install`
+
+## Test
+Run `demo_elasticc2.py`
+
+## Old usage (NEED TO CHANGE THIS AFTER WE'RE DONE):
 ```python
 import os, logging
 from train_models import Model
