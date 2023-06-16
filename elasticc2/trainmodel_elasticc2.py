@@ -156,7 +156,6 @@ class XgbModel:
 
         model = xgb.XGBClassifier(
             scale_pos_weight=scale_pos_weight,
-            use_label_encoder=False,
             random_state=self.random_state,
             objective="binary:logistic",
             eval_metric="aucpr",
