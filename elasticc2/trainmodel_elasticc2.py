@@ -353,8 +353,9 @@ class XgbModel:
 
         features = self.df_test_subsample[self.cols_to_use]
         target = self.df_test_subsample.target
-        y_true = target.replace({True: 1, False: 0}).values
-        y_pred = best_estimator.predict(features)
+        y_true = target.replace({True: self.pos_name, False: self.neg_name}).values
+        y_pred_raw = list(best_estimator.predict(features))
+        y_pred = [self.pos_name if i == 1 else self.neg_name for i in y_pred_raw]
 
         self.plot_confusion(y_true=y_true, y_pred=y_pred)
         self.plot_confusion(y_true=y_true, y_pred=y_pred, normalize="all")
@@ -410,8 +411,13 @@ class XgbModel:
         """
         Plot the confusion matrix for the binary classification
         """
-        fig, ax = plt.subplots(figsize=(4, 4))
-        cm = confusion_matrix(y_true=y_true, y_pred=y_pred, normalize=normalize)
+        fig, ax = plt.subplots(figsize=(5, 5))
+        cm = confusion_matrix(
+            y_true=y_true,
+            y_pred=y_pred,
+            normalize=normalize,
+            labels=[self.pos_name, self.neg_name],
+        )
 
         if normalize is not None:
             cmlabel = "Fraction of objects"
@@ -425,6 +431,11 @@ class XgbModel:
         im = plt.imshow(
             cm, interpolation="nearest", cmap=plt.cm.Blues, vmin=0, vmax=vmax
         )
+
+        tick_marks = np.asarray([0, 1])
+
+        plt.xticks(tick_marks, [self.neg_name, self.pos_name], ha="center")
+        plt.yticks(tick_marks, [self.neg_name, self.pos_name])
 
         outpath = (
             self.plot_dir

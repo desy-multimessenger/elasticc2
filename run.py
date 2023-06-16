@@ -37,6 +37,14 @@ setups = {
         "neg_tax": tax.get_ids(exclude=tax.rec.ids_from_keys("kn")),
         "neg_name": "all_other",
     },
+    4: {
+        "key": "parsnip",
+        "pos_tax": [*tax.nrec.sn.get_ids(), *tax.nrec.long.get_ids()],
+        "neg_tax": tax.get_ids(
+            exclude=[*tax.nrec.sn.get_ids(), *tax.nrec.long.get_ids()]
+        ),
+        "neg_name": "all_other",
+    },
 }
 
 
@@ -60,5 +68,6 @@ def run_setup(num: int):
     model.evaluate()
 
 
-max_taxlength = 10000
-run_setup(1)
+for setup in [4]:  # , 2, 4]:
+    max_taxlength = 1000
+    run_setup(setup)
