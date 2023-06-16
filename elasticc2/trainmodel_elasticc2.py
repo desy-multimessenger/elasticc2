@@ -215,14 +215,11 @@ class XgbModel:
         self.grid_result = grid_result
         self.best_estimator = best_estimator
 
-        outpath_grid = (
-            self.model_dir
-            / f"grid_result_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}"
-        )
+        outpath_grid = self.model_dir / f"grid_result"
 
         outpath_model = (
             self.model_dir
-            / f"model_pos{'-'.join(map(str,self.pos_tax))}_neg{'-'.join(map(str,self.neg_tax))}_nsample_{self.grid_search_sample_size}"
+            / f"model_pos{'-'.join(map(str,self.pos_tax))}_neg{'-'.join(map(str,self.neg_tax))}"
         )
 
         joblib.dump(grid_result, outpath_grid)
@@ -243,9 +240,7 @@ class XgbModel:
         """
 
         # Load the stuff
-        infile_grid = (
-            self.model_dir / f"grid_result_nsample_{self.grid_search_sample_size}"
-        )
+        infile_grid = self.model_dir / f"grid_result"
 
         grid_result = joblib.load(infile_grid)
         best_estimator = grid_result.best_estimator_
@@ -295,8 +290,7 @@ class XgbModel:
             timebin_mean_list.append(np.mean([timebin[0], timebin[1]]))
 
         outfiles = [
-            self.plot_dir / f"{i}_nsample_{self.grid_search_sample_size}.pdf"
-            for i in ["precision", "recall", "aucpr"]
+            self.plot_dir / f"{i}_.pdf" for i in ["precision", "recall", "aucpr"]
         ]
 
         fig, ax = plt.subplots(figsize=(5, 5))
@@ -368,10 +362,7 @@ class XgbModel:
         plt.title("Feature importance", fontsize=25)
         plt.tight_layout()
 
-        outfile = (
-            self.plot_dir
-            / f"feature_importance_nsample_{self.grid_search_sample_size}.pdf"
-        )
+        outfile = self.plot_dir / f"feature_importance.pdf"
 
         fig.savefig(
             outfile,
@@ -400,10 +391,7 @@ class XgbModel:
             cm, interpolation="nearest", cmap=plt.cm.Blues, vmin=0, vmax=vmax
         )
 
-        outpath = (
-            self.plot_dir
-            / f"confusion_nsample_{self.grid_search_sample_size}_norm_{normalize}.pdf"
-        )
+        outpath = self.plot_dir / f"confusion_norm_{normalize}.pdf"
 
         thresh = cm.max() / 2.0
 
