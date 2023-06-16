@@ -40,6 +40,8 @@ class XgbModel:
         self,
         pos_tax: list[int],
         neg_tax: list[int],
+        pos_name: str,
+        neg_name: str,
         path_to_featurefiles: str | Path,
         max_taxlength: int = -1,
         n_iter: int = 5,
@@ -50,6 +52,8 @@ class XgbModel:
     ) -> None:
         self.pos_tax = pos_tax
         self.neg_tax = neg_tax
+        self.pos_name = pos_name
+        self.neg_name = neg_name
         self.path_to_featurefiles = Path(path_to_featurefiles)
         self.max_taxlength = max_taxlength
         self.n_iter = n_iter
@@ -217,9 +221,12 @@ class XgbModel:
 
         outpath_grid = self.model_dir / f"grid_result"
 
+        # outpath_model = (
+        #     self.model_dir
+        #     / f"model_pos{'-'.join(map(str,self.pos_tax))}_neg{'-'.join(map(str,self.neg_tax))}"
+        # )
         outpath_model = (
-            self.model_dir
-            / f"model_pos{'-'.join(map(str,self.pos_tax))}_neg{'-'.join(map(str,self.neg_tax))}"
+            self.model_dir / f"model_pos_{self.pos_name}_neg_{self.neg_name}"
         )
 
         joblib.dump(grid_result, outpath_grid)
@@ -290,7 +297,8 @@ class XgbModel:
             timebin_mean_list.append(np.mean([timebin[0], timebin[1]]))
 
         outfiles = [
-            self.plot_dir / f"{i}.pdf" for i in ["precision", "recall", "aucpr"]
+            self.plot_dir / f"{i}_pos_{self.pos_name}_neg_{self.neg_name}.pdf"
+            for i in ["precision", "recall", "aucpr"]
         ]
 
         fig, ax = plt.subplots(figsize=(5, 5))
@@ -364,7 +372,10 @@ class XgbModel:
         plt.title("Feature importance", fontsize=25)
         plt.tight_layout()
 
-        outfile = self.plot_dir / f"feature_importance.pdf"
+        outfile = (
+            self.plot_dir
+            / f"feature_importance_pos_{self.pos_name}_neg_{self.neg_name}.pdf"
+        )
 
         fig.savefig(
             outfile,
@@ -393,7 +404,10 @@ class XgbModel:
             cm, interpolation="nearest", cmap=plt.cm.Blues, vmin=0, vmax=vmax
         )
 
-        outpath = self.plot_dir / f"confusion_norm_{normalize}.pdf"
+        outpath = (
+            self.plot_dir
+            / f"confusion_pos_{self.pos_name}_neg_{self.neg_name}_norm_{normalize}.pdf"
+        )
 
         thresh = cm.max() / 2.0
 
