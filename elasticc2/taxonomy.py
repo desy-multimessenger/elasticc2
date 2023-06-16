@@ -261,7 +261,7 @@ class SN(TaxBase):
     snia: TaxBase
     snibc: TaxBase
     snii: TaxBase
-    snax: TaxBase
+    sniax: TaxBase
     sn91bg: TaxBase
 
 
@@ -368,7 +368,7 @@ sn = SN(
     snia=TaxBase(2222, "snia", 4),
     snibc=TaxBase(2223, "snibc", 4),
     snii=TaxBase(2224, "snii", 4),
-    snax=TaxBase(2225, "snax", 4),
+    sniax=TaxBase(2225, "sniax", 4),
     sn91bg=TaxBase(2226, "sn91bg", 4),
 )
 
