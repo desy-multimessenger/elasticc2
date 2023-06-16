@@ -45,6 +45,30 @@ setups = {
         ),
         "neg_name": "all_other",
     },
+    5: {
+        "key": "ceph",
+        "pos_tax": [tax.rec.periodic.ceph.id],
+        "neg_tax": tax.rec.periodic.get_ids(exclude=[tax.rec.periodic.ceph.id]),
+        "neg_name": "other_stars",
+    },
+    6: {
+        "key": "deltasc",
+        "pos_tax": [tax.rec.periodic.deltasc.id],
+        "neg_tax": tax.rec.periodic.get_ids(exclude=[tax.rec.periodic.deltasc.id]),
+        "neg_name": "other_stars",
+    },
+    7: {
+        "key": "eb",
+        "pos_tax": [tax.rec.periodic.eb.id],
+        "neg_tax": tax.rec.periodic.get_ids(exclude=[tax.rec.periodic.eb.id]),
+        "neg_name": "other_stars",
+    },
+    8: {
+        "key": "rrlyrae",
+        "pos_tax": [tax.rec.periodic.rrlyrae.id],
+        "neg_tax": tax.rec.periodic.get_ids(exclude=[tax.rec.periodic.rrlyrae.id]),
+        "neg_name": "other_stars",
+    },
 }
 
 
@@ -68,6 +92,6 @@ def run_setup(num: int):
     model.evaluate()
 
 
-for setup in [4]:  # , 2, 4]:
-    max_taxlength = 1000
+for setup in [6, 7, 8]:
+    max_taxlength = 10000
     run_setup(setup)
