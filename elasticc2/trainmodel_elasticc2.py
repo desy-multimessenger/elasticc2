@@ -334,6 +334,7 @@ class XgbModel:
         y_pred = best_estimator.predict(features)
 
         self.plot_confusion(y_true=y_true, y_pred=y_pred)
+        self.plot_confusion(y_true=y_true, y_pred=y_pred, normalize="all")
 
     def get_optimal_bins(self, nbins=20):
         """
@@ -403,7 +404,7 @@ class XgbModel:
 
         outpath = (
             self.plot_dir
-            / f"confusion_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}.pdf"
+            / f"confusion_niter_{self.n_iter}_nsample_{self.grid_search_sample_size}_norm_{normalize}.pdf"
         )
 
         thresh = cm.max() / 2.0

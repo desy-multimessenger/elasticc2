@@ -15,7 +15,9 @@ logger.setLevel(logging.INFO)
 basedir = os.environ.get("ELASTICCDATA")
 if basedir is None:
     raise ValueError("Please set an environment-variable for 'ELASTICCDATA'")
-path_to_featurefiles = Path(basedir) / "feature_extraction" / "trainset_all_max3"
+# path_to_featurefiles = Path(basedir) / "feature_extraction" / "trainset_all_max3"
+path_to_featurefiles = Path(basedir) / "feature_extraction" / "trainset_early_max10"
+
 
 config = load_config()
 cl_inv = config["classes_inv"]
@@ -62,7 +64,7 @@ pos_tax = [
     2246,
 ]
 neg_tax = [2321, 2322, 2323, 2324, 2325, 2326, 2331, 2332]
-max_taxlength = 1000
+max_taxlength = 10000
 
 model = XgbModel(
     pos_tax=pos_tax,
