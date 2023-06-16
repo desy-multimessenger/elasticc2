@@ -1,0 +1,32 @@
+classes:
+  2221: snother
+  2222: snia
+  2223: snibc
+  2224: snii
+  2225: sniax
+  2226: 91bg
+  2231: fast
+  2232: kn
+  2233: mdwarf
+  2234: dwarfnova
+  2235: ulens
+  2241: long
+  2242: slsn
+  2243: tde
+  2244: ilot
+  2245: cart
+  2246: pisn
+  2310: recurring
+  2320: periodic
+  2322: cepheid
+  2323: rrlyrae
+  2324: deltascuti
+  2325: eb
+  2326: lpv
+  2331: nonperiodic
+  2332: agn
+
+classes0:
+  0: meta
+  1: static
+  2: variable
