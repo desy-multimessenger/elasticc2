@@ -239,9 +239,7 @@ class XgbModel:
         #     self.model_dir
         #     / f"model_pos{'-'.join(map(str,self.pos_tax))}_neg{'-'.join(map(str,self.neg_tax))}"
         # )
-        outpath_model = (
-            self.model_dir / f"model_pos_{self.pos_name}_neg_{self.neg_name}"
-        )
+        outpath_model = self.model_dir / f"model_{self.pos_name}_vs_{self.neg_name}"
 
         joblib.dump(grid_result, outpath_grid)
         joblib.dump(
@@ -312,7 +310,7 @@ class XgbModel:
             timebin_mean_list.append(np.mean([timebin[0], timebin[1]]))
 
         outfiles = [
-            self.plot_dir / f"{i}_pos_{self.pos_name}_neg_{self.neg_name}.pdf"
+            self.plot_dir / f"{i}_{self.pos_name}_vs_{self.neg_name}.pdf"
             for i in ["precision", "recall", "aucpr"]
         ]
 
@@ -388,8 +386,7 @@ class XgbModel:
         plt.tight_layout()
 
         outfile = (
-            self.plot_dir
-            / f"feature_importance_pos_{self.pos_name}_neg_{self.neg_name}.pdf"
+            self.plot_dir / f"feature_importance_{self.pos_name}_vs_{self.neg_name}.pdf"
         )
 
         fig.savefig(
@@ -421,7 +418,7 @@ class XgbModel:
 
         outpath = (
             self.plot_dir
-            / f"confusion_pos_{self.pos_name}_neg_{self.neg_name}_norm_{normalize}.pdf"
+            / f"confusion_{self.pos_name}_vs_{self.neg_name}_norm_{normalize}.pdf"
         )
 
         thresh = cm.max() / 2.0
