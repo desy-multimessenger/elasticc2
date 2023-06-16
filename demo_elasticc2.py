@@ -20,18 +20,19 @@ path_to_featurefiles = Path(basedir) / "feature_extraction" / "trainset_all_max3
 
 config = load_config()
 
-cl_inv = config["classes_inv"]["all"]
+cl_inv = config["all"]
 
-pos_tax = config["galactic"]
+key = "recurring"
+
+pos_tax = config[key]
 neg_tax = [i for i in cl_inv if i not in pos_tax]
 max_taxlength = 10000
-
 
 model = XgbModel(
     pos_tax=pos_tax,
     neg_tax=neg_tax,
-    pos_name="galactic",
-    neg_name="non_galactic",
+    pos_name=key,
+    neg_name=f"non_{key}",
     path_to_featurefiles=path_to_featurefiles,
     max_taxlength=max_taxlength,
 )
