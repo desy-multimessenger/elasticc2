@@ -43,30 +43,28 @@ cl_inv = config["classes_inv"]
 
 # Train classifier to separate recurrent from non-recurrent alerts using all alerts
 pos_tax = [
+    2210,
+    2221,
     2222,
     2223,
     2224,
     2225,
     2226,
+    2231,
     2232,
     2233,
     2234,
     2235,
+    2241,
     2242,
     2243,
     2244,
     2245,
     2246,
 ]
-neg_tax = [2322, 2323, 2324, 2325, 2332]
-max_taxlength = -1
+neg_tax = [2321, 2322, 2323, 2324, 2325, 2326, 2331, 2332]
+max_taxlength = 1000
 
-
-# # Train classifer to distinguish Cepheids from other periodic stars
-# # Using a subset of max 10000 rows from the feature filws
-# pos_tax = [2322]
-# neg_tax = [2323, 2324, 2325]
-# max_taxlength = 10000
 
 model = XgbModel(
     pos_tax=pos_tax,

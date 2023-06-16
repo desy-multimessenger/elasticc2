@@ -117,7 +117,6 @@ class XgbModel:
 
             df = df.drop(columns=["stock"])
             df["target"] = taxclass in self.pos_tax
-            #           df = df.replace({np.nan: None})
             df = df.fillna(np.nan)
 
             if fulldf is None:
@@ -146,7 +145,6 @@ class XgbModel:
         logger.info(
             f"Find scale weight {scale_pos_weight} from {np.sum(y_train)} pos out of {len(y_train)} rows."
         )
-
         model = xgb.XGBClassifier(
             scale_pos_weight=scale_pos_weight,
             random_state=self.random_state,
@@ -226,7 +224,9 @@ class XgbModel:
         )
 
         joblib.dump(grid_result, outpath_grid)
-        joblib.dump(best_estimator, outpath_model)
+        joblib.dump(
+            {"columns": self.cols_to_use, "model": best_estimator}, outpath_model
+        )
 
         t_end = time.time()
 
@@ -258,12 +258,8 @@ class XgbModel:
         self.plot_features()
 
         """
-        Now we cut the test sample so that only one datapoint
-        per stock-ID survives
+        Now we cut the test sample so that only one datapoint per stock-ID survives
         """
-        # df_test_subsample = self.get_random_stock_subsample(self.df_val)
-        # self.df_test_subsample = df_test_subsample
-        # With the new larger feature files we have now assumed that subselection has already been done.
         self.df_test_subsample = self.df_val
 
         logger.info(f"Best: {grid_result.best_score_} using {grid_result.best_params_}")
@@ -286,11 +282,6 @@ class XgbModel:
                 & (self.df_test_subsample["ndet"] <= timebin[1])
             ]
 
-            # X_test = df_test_bin.drop(columns=["class_short", "stock"])
-            # self.cols_to_use.append("stock")
-
-            #            y_test = df_test_bin.drop(columns=self.cols_to_use)
-            #            features = X_test
             features = df_test_bin[self.cols_to_use]
             target = df_test_bin.target
 
@@ -362,9 +353,6 @@ class XgbModel:
         fig, ax = plt.subplots(figsize=(10, 21))
 
         cols = self.cols_to_use
-        #        cols =  self.df_train.drop(columns=['target']).columns
-
-        # cols.remove("stock")
 
         ax.barh(cols, self.best_estimator.feature_importances_)
         plt.title("Feature importance", fontsize=25)
