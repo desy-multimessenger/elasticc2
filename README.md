@@ -12,9 +12,6 @@ Useful links:
 - set the environment variable `ELASTICCDATA` to match the download destination
 - `git clone` this dir, `cd` into it and run `poetry install`
 
-## Test
-Run `demo_elasticc2.py`
-
 ## Usage:
 ```python
 import logging
