@@ -100,5 +100,5 @@ def run_setup(num: int):
 
 
 for setup in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
-    max_taxlength = 10000
+    max_taxlength = -1
     run_setup(setup)

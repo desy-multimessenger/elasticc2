@@ -404,6 +404,8 @@ class XgbModel:
             dpi=300,
         )
 
+        plt.close()
+
     def plot_confusion(
         self, y_true: np.ndarray, y_pred: np.ndarray, normalize: str = None
     ):
