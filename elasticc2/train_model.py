@@ -355,7 +355,6 @@ class XgbModel:
         y_true = target.replace({True: self.pos_name, False: self.neg_name}).values
         y_pred_raw = list(best_estimator.predict(features))
         y_pred = [self.pos_name if i == 1 else self.neg_name for i in y_pred_raw]
-        print(y_pred)
 
         self.plot_confusion(y_true=y_true, y_pred=y_pred)
         self.plot_confusion(y_true=y_true, y_pred=y_pred, normalize="all")

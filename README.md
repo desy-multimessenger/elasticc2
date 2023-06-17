@@ -19,7 +19,7 @@ import os
 from pathlib import Path
 
 from elasticc2.taxonomy import var as tax
-from elasticc2.trainmodel_elasticc2 import XgbModel
+from elasticc2.train_model import XgbModel
 from elasticc2.utils import load_config
 
 logging.basicConfig()
