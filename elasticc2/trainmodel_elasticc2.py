@@ -190,7 +190,6 @@ class XgbModel:
             "learning_rate": np.arange(0.0005, 0.5, 0.0005),
             "subsample": np.arange(0.01, 1.0, 0.01),
             "colsample_bylevel": np.round(np.arange(0.1, 1.0, 0.01)),
-            # "colsample_bytree": np.arange(0.1, 1.0, 0.01),
         }
 
         kfold = StratifiedKFold(
@@ -356,6 +355,7 @@ class XgbModel:
         y_true = target.replace({True: self.pos_name, False: self.neg_name}).values
         y_pred_raw = list(best_estimator.predict(features))
         y_pred = [self.pos_name if i == 1 else self.neg_name for i in y_pred_raw]
+        print(y_pred)
 
         self.plot_confusion(y_true=y_true, y_pred=y_pred)
         self.plot_confusion(y_true=y_true, y_pred=y_pred, normalize="all")
@@ -416,7 +416,7 @@ class XgbModel:
             y_true=y_true,
             y_pred=y_pred,
             normalize=normalize,
-            labels=[self.pos_name, self.neg_name],
+            # labels=[self.pos_name, self.neg_name],
         )
 
         if normalize is not None:
@@ -432,10 +432,8 @@ class XgbModel:
             cm, interpolation="nearest", cmap=plt.cm.Blues, vmin=0, vmax=vmax
         )
 
-        tick_marks = np.asarray([0, 1])
-
-        plt.xticks(tick_marks, [self.neg_name, self.pos_name], ha="center")
-        plt.yticks(tick_marks, [self.neg_name, self.pos_name])
+        plt.xticks([0, 1], [self.neg_name, self.pos_name], ha="center")
+        plt.yticks([0, 1], [self.neg_name, self.pos_name])
 
         outpath = (
             self.plot_dir

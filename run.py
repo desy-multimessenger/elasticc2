@@ -34,7 +34,7 @@ setups = {
     3: {
         "key": "kn",
         "pos_tax": tax.ids_from_keys("kn"),
-        "neg_tax": tax.get_ids(exclude=tax.rec.ids_from_keys("kn")),
+        "neg_tax": tax.get_ids(exclude=tax.ids_from_keys("kn")),
         "neg_name": "all_other",
     },
     4: {
@@ -88,6 +88,7 @@ def run_setup(num: int):
         pos_tax=pos_tax,
         neg_tax=neg_tax,
         pos_name=key,
+        n_iter=10,
         neg_name=neg_name,
         path_to_featurefiles=path_to_featurefiles,
         max_taxlength=max_taxlength,
@@ -98,6 +99,6 @@ def run_setup(num: int):
     model.evaluate()
 
 
-for setup in [9]:
+for setup in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
     max_taxlength = 10000
     run_setup(setup)
