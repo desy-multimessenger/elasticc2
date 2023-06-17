@@ -415,7 +415,7 @@ class XgbModel:
             y_true=y_true,
             y_pred=y_pred,
             normalize=normalize,
-            # labels=[self.pos_name, self.neg_name],
+            labels=[self.neg_name, self.pos_name],
         )
 
         if normalize is not None:
