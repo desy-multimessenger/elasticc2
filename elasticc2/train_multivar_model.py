@@ -113,10 +113,6 @@ class XgbModel:
 
         fulldf = None
 
-        from elasticc2.utils import load_config
-
-        config = load_config()
-
         for fname in files:
             taxclass = int(re.search(r"features_(\d+)_ndet", fname)[1])
             if taxclass not in self.tax:
