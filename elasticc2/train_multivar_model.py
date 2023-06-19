@@ -4,7 +4,6 @@
 import glob
 import itertools
 import logging
-import os
 import re
 import time
 from pathlib import Path
@@ -14,12 +13,12 @@ import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-from elasticc2.taxonomy import var as vartax
-from sklearn import metrics  # type: ignore
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import RandomizedSearchCV  # type: ignore
-from sklearn.model_selection import StratifiedKFold, train_test_split
-from sklearn.utils import shuffle  # type: ignore
+from sklearn.model_selection import StratifiedKFold
+from sklearn.preprocessing import LabelEncoder
+
+from elasticc2.taxonomy import var as vartax
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +95,8 @@ class XgbModel:
             import tarfile
 
             logger.info(
-                f"{self.path_to_featurefiles}.tar.xz has not yet been extracted, doing that now. Extracting to {self.path_to_featurefiles.parents[0]}"
+                f"{self.path_to_featurefiles}.tar.xz has not yet been extracted, doing "
+                f"that now. Extracting to {self.path_to_featurefiles.parents[0]}"
             )
             with tarfile.open(f"{self.path_to_featurefiles}.tar.xz") as f:
                 f.extractall(path=self.path_to_featurefiles.parents[0])
@@ -118,8 +118,8 @@ class XgbModel:
         config = load_config()
 
         for fname in files:
-            taxclass = int(re.search("features_(\d+)_ndet", fname)[1])
-            if not taxclass in self.tax:
+            taxclass = int(re.search(r"features_(\d+)_ndet", fname)[1])
+            if taxclass not in self.tax:
                 continue
 
             df = pd.read_parquet(fname)
@@ -131,7 +131,8 @@ class XgbModel:
             userows = df.shape[0]
 
             df = df.drop(columns=["stock"])
-            df["target"] = config["classes"][taxclass]
+
+            df["target"] = vartax.keys_from_ids(taxclass)[0]
 
             df = df.fillna(np.nan)
 
@@ -143,24 +144,16 @@ class XgbModel:
 
         self.n_classes = len(fulldf.target.unique())
 
-        label_to_num = {}
-        labels_num = []
+        self.le = LabelEncoder()
+        self.le.fit(np.unique(fulldf.target))
 
-        for i, label in enumerate(sorted(fulldf.target.unique())):
-            label_to_num.update({label: i})
+        fulldf.target = self.le.transform(fulldf.target.tolist())
 
-        for label in fulldf.target:
-            labels_num.append(label_to_num[label])
-
-        fulldf["target_num"] = labels_num
-        fulldf.drop(columns=["target"], inplace=True)
-
-        fulldf.rename(columns={"target_num": "target"}, inplace=True)
-
-        # fulldf.target = pd.Categorical(fulldf.target)
-        # fulldf.target_num = fulldf.target.cat.codes
         if training:
-            self.label_to_num = label_to_num
+            self.label_to_num = {
+                self.le.inverse_transform([num])[0]: num
+                for num in np.unique(fulldf.target)
+            }
             self.num_to_label = {v: k for k, v in self.label_to_num.items()}
 
         return fulldf
