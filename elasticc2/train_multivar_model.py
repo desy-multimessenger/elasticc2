@@ -184,7 +184,7 @@ class XgbModel:
             num_class=self.n_classes,
             eval_metric="aucpr",
             colsample_bytree=1.0,
-            n_threads=self.n_threads,
+            n_jobs=self.n_threads,
         )
 
         param_grid = {
