@@ -214,8 +214,8 @@ class XgbModel:
 
         """
         Now we downsample our training set to do a
-        fine-grained grid search. Training will be done 
-        on the best estimator from that search and uses 
+        fine-grained grid search. Training will be done
+        on the best estimator from that search and uses
         the full sample
         """
         logger.info(
@@ -236,7 +236,8 @@ class XgbModel:
         """
         logger.info("--------------------------------------------")
         logger.info(
-            "\n\nNow fitting with the best estimator from the grid search. This will take time\n"
+            "\n\nNow fitting with the best estimator from the grid search. "
+            "This will take time\n"
         )
         logger.info("--------------------------------------------")
 
@@ -247,7 +248,7 @@ class XgbModel:
         self.grid_result = grid_result
         self.best_estimator = best_estimator
 
-        outpath_grid = self.model_dir / f"grid_result"
+        outpath_grid = self.model_dir / "grid_result"
 
         outpath_model = self.model_dir / f"model_{self.name}"
 
@@ -268,7 +269,7 @@ class XgbModel:
         Evaluate the model
         """
         # Load the stuff
-        infile_grid = self.model_dir / f"grid_result"
+        infile_grid = self.model_dir / "grid_result"
 
         grid_result = joblib.load(infile_grid)
         best_estimator = grid_result.best_estimator_
@@ -361,7 +362,8 @@ class XgbModel:
 
     def get_optimal_bins(self, nbins=20):
         """
-        Determine optimal time bins (requirement: same number of alerts per bin). This cannot always be fulfilled, so duplicates=drop is passed.
+        Determine optimal time bins (requirement: same number of alerts per bin).
+        This cannot always be fulfilled, so duplicates=drop is passed.
         """
         out, bins = pd.qcut(
             self.df_test_subsample.ndet.values, nbins, retbins=True, duplicates="drop"
