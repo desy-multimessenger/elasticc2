@@ -1,5 +1,6 @@
 import logging
 import os
+import socket
 from pathlib import Path
 
 from elasticc2.taxonomy import var as tax
@@ -8,6 +9,13 @@ from elasticc2.utils import load_config
 logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
+
+if socket.gethostname() in ["wgs33.zeuthen.desy.de"]:
+    n_threads = 32
+elif socket.gethostname() in ["wgs18.zeuthen.desy.de"]:
+    n_threads = 16
+else:
+    n_threads = None
 
 config = load_config()
 # Path to extracted features
@@ -83,7 +91,10 @@ setups_binary = {
     },
 }
 
-setups_multivar = {1: {"name": "stars", "tax": tax.rec.periodic.get_ids()}}
+setups_multivar = {
+    1: {"name": "stars", "tax": tax.rec.periodic.get_ids()},
+    2: {"name": "all", "tax": tax.get_ids()},
+}
 
 
 def run_setup_binary(num: int):
@@ -102,6 +113,7 @@ def run_setup_binary(num: int):
         neg_name=neg_name,
         path_to_featurefiles=path_to_featurefiles,
         max_taxlength=max_taxlength,
+        n_threads=n_threads,
     )
 
     model.train()
@@ -121,6 +133,7 @@ def run_setup_multivar(num: int):
         n_iter=10,
         path_to_featurefiles=path_to_featurefiles,
         max_taxlength=max_taxlength,
+        n_threads=n_threads,
     )
 
     model.train()
@@ -128,6 +141,6 @@ def run_setup_multivar(num: int):
     model.evaluate()
 
 
-for setup in [1]:
+for setup in [1, 2]:
     max_taxlength = -1
     run_setup_multivar(1)
