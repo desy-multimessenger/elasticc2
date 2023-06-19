@@ -94,6 +94,7 @@ setups_binary = {
 setups_multivar = {
     1: {"name": "stars", "tax": tax.rec.periodic.get_ids()},
     2: {"name": "all", "tax": tax.get_ids()},
+    3: {"name": "nrec", "tax": tax.nrec.get_ids()},
 }
 
 
