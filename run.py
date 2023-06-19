@@ -9,6 +9,11 @@ logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+if socket.gethostname() == "wgs33.zeuthen.desy.de":
+    n_thread = 32
+else:
+    n_thread = None
+
 config = load_config()
 # Path to extracted features
 # These will already include subselection based on ndet, restrictions on alerts per
@@ -118,7 +123,7 @@ def run_setup_multivar(num: int):
     model = XgbModel(
         tax=tax,
         name=name,
-        n_iter=10,
+        n_iter=1,
         path_to_featurefiles=path_to_featurefiles,
         max_taxlength=max_taxlength,
     )
@@ -129,5 +134,5 @@ def run_setup_multivar(num: int):
 
 
 for setup in [1]:
-    max_taxlength = -1
+    max_taxlength = 10000
     run_setup_multivar(1)
