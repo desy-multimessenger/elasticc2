@@ -4,7 +4,6 @@
 import glob
 import itertools
 import logging
-import os
 import re
 import time
 from pathlib import Path
@@ -14,12 +13,12 @@ import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-from elasticc2.taxonomy import var as tax
 from sklearn import metrics  # type: ignore
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import RandomizedSearchCV  # type: ignore
-from sklearn.model_selection import StratifiedKFold, train_test_split
-from sklearn.utils import shuffle  # type: ignore
+from sklearn.model_selection import StratifiedKFold
+
+from elasticc2.taxonomy import var as tax
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +105,8 @@ class XgbModel:
             import tarfile
 
             logger.info(
-                f"{self.path_to_featurefiles}.tar.xz has not yet been extracted, doing that now. Extracting to {self.path_to_featurefiles.parents[0]}"
+                f"{self.path_to_featurefiles}.tar.xz has not yet been extracted, doing"
+                f"that now. Extracting to {self.path_to_featurefiles.parents[0]}"
             )
             with tarfile.open(f"{self.path_to_featurefiles}.tar.xz") as f:
                 f.extractall(path=self.path_to_featurefiles.parents[0])
@@ -124,8 +124,8 @@ class XgbModel:
         fulldf = None
 
         for fname in files:
-            taxclass = int(re.search("features_(\d+)_ndet", fname)[1])
-            if not taxclass in self.pos_tax + self.neg_tax:
+            taxclass = int(re.search(r"features_(\d+)_ndet", fname)[1])
+            if taxclass not in self.pos_tax + self.neg_tax:
                 continue
 
             df = pd.read_parquet(fname)
@@ -162,7 +162,8 @@ class XgbModel:
     def has_enough_data(self):
         if (instances := self.df_train["target"].sum()) < 10:
             logger.warning(
-                f"Your training data contains less than 10 instances of {self.pos_tax} ({instances})"
+                f"Your training data contains less than 10 instances of {self.pos_tax} "
+                f"({instances})"
             )
             return False
         else:
@@ -180,7 +181,8 @@ class XgbModel:
         y_train = self.df_train["target"]
         scale_pos_weight = (len(y_train) - np.sum(y_train)) / np.sum(y_train)
         logger.info(
-            f"Find scale weight {scale_pos_weight} from {np.sum(y_train)} pos out of {len(y_train)} rows."
+            f"Find scale weight {scale_pos_weight} from {np.sum(y_train)} "
+            f"pos out of {len(y_train)} rows."
         )
         model = xgb.XGBClassifier(
             scale_pos_weight=scale_pos_weight,
@@ -219,8 +221,8 @@ class XgbModel:
 
         """
         Now we downsample our training set to do a
-        fine-grained grid search. Training will be done 
-        on the best estimator from that search and uses 
+        fine-grained grid search. Training will be done
+        on the best estimator from that search and uses
         the full sample
         """
         logger.info(
@@ -241,7 +243,8 @@ class XgbModel:
         """
         logger.info("--------------------------------------------")
         logger.info(
-            "\n\nNow fitting with the best estimator from the grid search. This will take time\n"
+            "\n\nNow fitting with the best estimator from the grid search. "
+            "This will take time\n"
         )
         logger.info("--------------------------------------------")
 
@@ -252,7 +255,7 @@ class XgbModel:
         self.grid_result = grid_result
         self.best_estimator = best_estimator
 
-        outpath_grid = self.model_dir / f"grid_result"
+        outpath_grid = self.model_dir / "grid_result"
 
         # outpath_model = (
         #     self.model_dir
@@ -279,7 +282,7 @@ class XgbModel:
         if not self.has_enough_data():
             return None
         # Load the stuff
-        infile_grid = self.model_dir / f"grid_result"
+        infile_grid = self.model_dir / "grid_result"
 
         grid_result = joblib.load(infile_grid)
         best_estimator = grid_result.best_estimator_
@@ -373,7 +376,8 @@ class XgbModel:
 
     def get_optimal_bins(self, nbins=20):
         """
-        Determine optimal time bins (requirement: same number of alerts per bin). This cannot always be fulfilled, so duplicates=drop is passed.
+        Determine optimal time bins (requirement: same number of alerts per bin).
+        This cannot always be fulfilled, so duplicates=drop is passed.
         """
         out, bins = pd.qcut(
             self.df_test_subsample.ndet.values, nbins, retbins=True, duplicates="drop"
