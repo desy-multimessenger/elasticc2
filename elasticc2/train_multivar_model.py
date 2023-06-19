@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-from elasticc2.taxonomy import var as tax
+from elasticc2.taxonomy import var as vartax
 from sklearn import metrics  # type: ignore
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import RandomizedSearchCV  # type: ignore
@@ -39,10 +39,8 @@ class XgbModel:
 
     def __init__(
         self,
-        pos_tax: list[int],
-        neg_tax: list[int],
-        pos_name: str,
-        neg_name: str,
+        tax: list[int],
+        name: str,
         path_to_featurefiles: str | Path,
         max_taxlength: int = -1,
         n_iter: int = 5,
@@ -51,10 +49,8 @@ class XgbModel:
         grid_search_sample_size: int = 10000,
         cols_to_use: list[str] = [],
     ) -> None:
-        self.pos_tax = pos_tax
-        self.neg_tax = neg_tax
-        self.pos_name = pos_name
-        self.neg_name = neg_name
+        self.tax = tax
+        self.name = name
         self.path_to_featurefiles = Path(path_to_featurefiles)
         self.max_taxlength = max_taxlength
         self.n_iter = n_iter
@@ -77,10 +73,8 @@ class XgbModel:
 
         logger.info(
             f"\n-------------------"
-            f"\nTraining\n"
-            f"{self.pos_name} ({', '.join(tax.keys_from_ids(self.pos_tax))})"
-            f"\n--- VS. ---\n"
-            f"{self.neg_name} ({', '.join(tax.keys_from_ids(self.neg_tax))})\n"
+            f"\nTraining multivariate model for {len(self.tax)} classes\n"
+            f"{self.name} ({', '.join(vartax.keys_from_ids(self.tax))})\n"
             f"-------------------"
         )
 
@@ -88,8 +82,8 @@ class XgbModel:
         """
         Create the directories required
         """
-        self.plot_dir = self.plotdir / "plots" / f"{self.pos_name}_vs_{self.neg_name}"
-        self.model_dir = self.plotdir / "models" / f"{self.pos_name}_vs_{self.neg_name}"
+        self.plot_dir = self.plotdir / "plots_multivar" / f"{self.name}"
+        self.model_dir = self.plotdir / "models_multivar" / f"{self.name}"
 
         for path in [self.plot_dir, self.model_dir]:
             path.mkdir(exist_ok=True, parents=True)
@@ -119,9 +113,13 @@ class XgbModel:
 
         fulldf = None
 
+        from elasticc2.utils import load_config
+
+        config = load_config()
+
         for fname in files:
             taxclass = int(re.search("features_(\d+)_ndet", fname)[1])
-            if not taxclass in self.pos_tax + self.neg_tax:
+            if not taxclass in self.tax:
                 continue
 
             df = pd.read_parquet(fname)
@@ -133,7 +131,7 @@ class XgbModel:
             userows = df.shape[0]
 
             df = df.drop(columns=["stock"])
-            df["target"] = taxclass in self.pos_tax
+            df["target"] = taxclass  # config["classes"][taxclass]
 
             df = df.fillna(np.nan)
 
@@ -183,14 +181,6 @@ class XgbModel:
             colsample_bytree=1.0,
         )
 
-        # param_grid = {
-        #     "max_depth": [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
-        #     "min_child_weight": np.arange(0.0001, 0.5, 0.001),
-        #     "gamma": np.arange(0.0, 40.0, 0.005),
-        #     "learning_rate": np.arange(0.0005, 0.5, 0.0005),
-        #     "subsample": np.arange(0.01, 1.0, 0.01),
-        #     "colsample_bylevel": np.round(np.arange(0.1, 1.0, 0.01)),
-        # }
         param_grid = {
             "learning_rate": [0.1, 0.01, 0.001],
             "gamma": [0.01, 0.1, 0.3, 0.5, 1, 1.5, 2],

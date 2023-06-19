@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 
 from elasticc2.taxonomy import var as tax
-from elasticc2.train_model import XgbModel
 from elasticc2.utils import load_config
 
 logging.basicConfig()
@@ -18,7 +17,7 @@ if basedir is None:
     raise ValueError("Please set an environment-variable for 'ELASTICCDATA'")
 path_to_featurefiles = Path(basedir) / "feature_extraction" / "trainset_all_max3"
 
-setups = {
+setups_binary = {
     1: {
         "key": "galactic",
         "pos_tax": config["galactic"],
@@ -75,14 +74,24 @@ setups = {
         "neg_tax": tax.rec.periodic.get_ids(),
         "neg_name": "periodic_star",
     },
+    10: {
+        "key": "kn",
+        "pos_tax": tax.ids_from_keys("kn"),
+        "neg_tax": [*tax.nrec.sn.get_ids(), *tax.nrec.long.get_ids()],
+        "neg_name": "parsnip",
+    },
 }
 
+setups_multivar = {1: {"name": "stars", "tax": tax.rec.periodic.get_ids()}}
 
-def run_setup(num: int):
-    pos_tax = setups[num]["pos_tax"]
-    neg_tax = setups[num]["neg_tax"]
-    key = setups[num]["key"]
-    neg_name = setups[num]["neg_name"]
+
+def run_setup_binary(num: int):
+    pos_tax = setups_binary[num]["pos_tax"]
+    neg_tax = setups_binary[num]["neg_tax"]
+    key = setups_binary[num]["key"]
+    neg_name = setups_binary[num]["neg_name"]
+
+    from elasticc2.train_binary_model import XgbModel
 
     model = XgbModel(
         pos_tax=pos_tax,
@@ -99,6 +108,25 @@ def run_setup(num: int):
     model.evaluate()
 
 
-for setup in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
-    max_taxlength = -1
-    run_setup(setup)
+def run_setup_multivar(num: int):
+    tax = setups_multivar[num]["tax"]
+    name = setups_multivar[num]["name"]
+
+    from elasticc2.train_multivar_model import XgbModel
+
+    model = XgbModel(
+        tax=tax,
+        name=name,
+        n_iter=10,
+        path_to_featurefiles=path_to_featurefiles,
+        max_taxlength=max_taxlength,
+    )
+
+    model.train()
+
+    model.evaluate()
+
+
+for setup in [1]:
+    max_taxlength = 1000
+    run_setup_multivar(1)
