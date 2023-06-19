@@ -13,12 +13,11 @@ import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd
 import xgboost as xgb
+from elasticc2.taxonomy import var as vartax
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import RandomizedSearchCV  # type: ignore
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
-
-from elasticc2.taxonomy import var as vartax
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +46,7 @@ class XgbModel:
         plotdir: str | Path = ".",
         grid_search_sample_size: int = 10000,
         cols_to_use: list[str] = [],
+        n_threads: int | None = None,
     ) -> None:
         self.tax = tax
         self.name = name
@@ -57,6 +57,7 @@ class XgbModel:
         self.grid_search_sample_size = grid_search_sample_size
         self.plotdir = Path(plotdir)
         self.readlog: list = []
+        self.n_threads = n_threads
 
         self.create_dirs()
         self.df_train = self.read_featuredata(training=True)
@@ -183,6 +184,7 @@ class XgbModel:
             num_class=self.n_classes,
             eval_metric="aucpr",
             colsample_bytree=1.0,
+            n_threads=self.n_threads,
         )
 
         param_grid = {

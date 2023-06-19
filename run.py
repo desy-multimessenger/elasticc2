@@ -1,5 +1,6 @@
 import logging
 import os
+import socket
 from pathlib import Path
 
 from elasticc2.taxonomy import var as tax
@@ -10,9 +11,9 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 if socket.gethostname() == "wgs33.zeuthen.desy.de":
-    n_thread = 32
+    n_threads = 32
 else:
-    n_thread = None
+    n_threads = None
 
 config = load_config()
 # Path to extracted features
@@ -107,6 +108,7 @@ def run_setup_binary(num: int):
         neg_name=neg_name,
         path_to_featurefiles=path_to_featurefiles,
         max_taxlength=max_taxlength,
+        n_threads=n_threads,
     )
 
     model.train()
@@ -126,6 +128,7 @@ def run_setup_multivar(num: int):
         n_iter=1,
         path_to_featurefiles=path_to_featurefiles,
         max_taxlength=max_taxlength,
+        n_threads=n_threads,
     )
 
     model.train()
