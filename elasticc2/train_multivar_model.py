@@ -131,7 +131,7 @@ class XgbModel:
             userows = df.shape[0]
 
             df = df.drop(columns=["stock"])
-            df["target"] = taxclass  # config["classes"][taxclass]
+            df["target"] = config["classes"][taxclass]
 
             df = df.fillna(np.nan)
 
@@ -140,6 +140,28 @@ class XgbModel:
             else:
                 fulldf = pd.concat([fulldf, df], ignore_index=True)
             self.readlog.append([taxclass, fname, inrows, userows])
+
+        self.n_classes = len(fulldf.target.unique())
+
+        label_to_num = {}
+        labels_num = []
+
+        for i, label in enumerate(sorted(fulldf.target.unique())):
+            label_to_num.update({label: i})
+
+        for label in fulldf.target:
+            labels_num.append(label_to_num[label])
+
+        fulldf["target_num"] = labels_num
+        fulldf.drop(columns=["target"], inplace=True)
+
+        fulldf.rename(columns={"target_num": "target"}, inplace=True)
+
+        # fulldf.target = pd.Categorical(fulldf.target)
+        # fulldf.target_num = fulldf.target.cat.codes
+        if training:
+            self.label_to_num = label_to_num
+            self.num_to_label = {v: k for k, v in self.label_to_num.items()}
 
         return fulldf
 
@@ -150,33 +172,26 @@ class XgbModel:
         """
         raise ("NotImplementedError")
 
-    def has_enough_data(self):
-        if (instances := self.df_train["target"].sum()) < 10:
-            logger.warning(
-                f"Your training data contains less than 10 instances of {self.pos_tax} ({instances})"
-            )
-            return False
-        else:
-            return True
+    # def create_map(self, labels):
+    #     returndict = {}
+    #     if all([isinstance(i, int) for i in labels]):
+    #         for i in labels:
+    #             returndict.update({i: taxvar.keys_from_ids(i)})
+
+    #     print(returndict)
 
     def train(self):
         """
         Do the training
         """
-        if not self.has_enough_data():
-            return None
-
         t_start = time.time()
 
         y_train = self.df_train["target"]
-        scale_pos_weight = (len(y_train) - np.sum(y_train)) / np.sum(y_train)
-        logger.info(
-            f"Find scale weight {scale_pos_weight} from {np.sum(y_train)} pos out of {len(y_train)} rows."
-        )
+
         model = xgb.XGBClassifier(
-            scale_pos_weight=scale_pos_weight,
             random_state=self.random_state,
-            objective="binary:logistic",
+            objective="multi:softmax",
+            num_class=self.n_classes,
             eval_metric="aucpr",
             colsample_bytree=1.0,
         )
@@ -245,11 +260,7 @@ class XgbModel:
 
         outpath_grid = self.model_dir / f"grid_result"
 
-        # outpath_model = (
-        #     self.model_dir
-        #     / f"model_pos{'-'.join(map(str,self.pos_tax))}_neg{'-'.join(map(str,self.neg_tax))}"
-        # )
-        outpath_model = self.model_dir / f"model_{self.pos_name}_vs_{self.neg_name}"
+        outpath_model = self.model_dir / f"model_{self.name}"
 
         joblib.dump(grid_result, outpath_grid)
         joblib.dump(
@@ -267,8 +278,6 @@ class XgbModel:
         """
         Evaluate the model
         """
-        if not self.has_enough_data():
-            return None
         # Load the stuff
         infile_grid = self.model_dir / f"grid_result"
 
@@ -297,65 +306,64 @@ class XgbModel:
 
         logger.info(f"\nWe now plot the evaluation using {nbins} time bins")
 
-        precision_list = []
-        recall_list = []
-        aucpr_list = []
-        timebin_mean_list = []
+        # precision_list = []
+        # recall_list = []
+        # aucpr_list = []
+        # timebin_mean_list = []
 
-        for timebin in evaluation_bins:
-            df_test_bin = self.df_test_subsample[
-                (self.df_test_subsample["ndet"] >= timebin[0])
-                & (self.df_test_subsample["ndet"] <= timebin[1])
-            ]
+        # for timebin in evaluation_bins:
+        #     df_test_bin = self.df_test_subsample[
+        #         (self.df_test_subsample["ndet"] >= timebin[0])
+        #         & (self.df_test_subsample["ndet"] <= timebin[1])
+        #     ]
 
-            features = df_test_bin[self.cols_to_use]
-            target = df_test_bin.target
+        #     features = df_test_bin[self.cols_to_use]
+        #     target = df_test_bin.target
 
-            pred = best_estimator.predict(features)
+        #     pred = best_estimator.predict(features)
 
-            precision_list.append(metrics.precision_score(target, pred))
-            recall_list.append(metrics.recall_score(target, pred))
-            aucpr_list.append(metrics.average_precision_score(target, pred))
+        #     precision_list.append(metrics.precision_score(target, pred))
+        #     recall_list.append(metrics.recall_score(target, pred))
+        #     aucpr_list.append(metrics.average_precision_score(target, pred))
 
-            timebin_mean_list.append(np.mean([timebin[0], timebin[1]]))
+        #     timebin_mean_list.append(np.mean([timebin[0], timebin[1]]))
 
-        outfiles = [
-            self.plot_dir / f"{i}_{self.pos_name}_vs_{self.neg_name}.pdf"
-            for i in ["precision", "recall", "aucpr"]
-        ]
+        # outfiles = [
+        #     self.plot_dir / f"{i}_{self.pos_name}_vs_{self.neg_name}.pdf"
+        #     for i in ["precision", "recall", "aucpr"]
+        # ]
 
-        fig, ax = plt.subplots(figsize=(5, 5))
-        ax.scatter(timebin_mean_list, precision_list)
-        ax.set_xlabel("ndet interval center")
-        ax.set_ylabel("precision")
-        ax.set_ylim([0.5, 1])
-        fig.savefig(outfiles[0], dpi=300)
-        plt.close()
+        # fig, ax = plt.subplots(figsize=(5, 5))
+        # ax.scatter(timebin_mean_list, precision_list)
+        # ax.set_xlabel("ndet interval center")
+        # ax.set_ylabel("precision")
+        # ax.set_ylim([0.5, 1])
+        # fig.savefig(outfiles[0], dpi=300)
+        # plt.close()
 
-        fig, ax = plt.subplots(figsize=(5, 5))
-        ax.scatter(timebin_mean_list, recall_list)
-        ax.set_xlabel("ndet interval center")
-        ax.set_ylabel("recall")
-        ax.set_ylim([0.75, 1])
-        fig.savefig(outfiles[1], dpi=300)
-        plt.close()
+        # fig, ax = plt.subplots(figsize=(5, 5))
+        # ax.scatter(timebin_mean_list, recall_list)
+        # ax.set_xlabel("ndet interval center")
+        # ax.set_ylabel("recall")
+        # ax.set_ylim([0.75, 1])
+        # fig.savefig(outfiles[1], dpi=300)
+        # plt.close()
 
-        fig, ax = plt.subplots(figsize=(5, 5))
-        ax.scatter(timebin_mean_list, aucpr_list)
-        ax.set_xlabel("ndet interval center")
-        ax.set_ylabel("aucpr")
-        ax.set_ylim([0.5, 1])
-        fig.savefig(outfiles[2], dpi=300)
-        plt.close()
+        # fig, ax = plt.subplots(figsize=(5, 5))
+        # ax.scatter(timebin_mean_list, aucpr_list)
+        # ax.set_xlabel("ndet interval center")
+        # ax.set_ylabel("aucpr")
+        # ax.set_ylim([0.5, 1])
+        # fig.savefig(outfiles[2], dpi=300)
+        # plt.close()
 
         # now we plot the confusion matrix
-        self.df_test_subsample
 
         features = self.df_test_subsample[self.cols_to_use]
         target = self.df_test_subsample.target
-        y_true = target.replace({True: self.pos_name, False: self.neg_name}).values
-        y_pred_raw = list(best_estimator.predict(features))
-        y_pred = [self.pos_name if i == 1 else self.neg_name for i in y_pred_raw]
+
+        y_true = target.values
+        y_pred = list(best_estimator.predict(features))
 
         self.plot_confusion(y_true=y_true, y_pred=y_pred)
         self.plot_confusion(y_true=y_true, y_pred=y_pred, normalize="all")
@@ -396,9 +404,7 @@ class XgbModel:
         plt.title("Feature importance", fontsize=25)
         plt.tight_layout()
 
-        outfile = (
-            self.plot_dir / f"feature_importance_{self.pos_name}_vs_{self.neg_name}.pdf"
-        )
+        outfile = self.plot_dir / f"feature_importance_{self.name}.pdf"
 
         fig.savefig(
             outfile,
@@ -418,7 +424,7 @@ class XgbModel:
             y_true=y_true,
             y_pred=y_pred,
             normalize=normalize,
-            labels=[self.neg_name, self.pos_name],
+            labels=list(self.num_to_label.keys()),
         )
 
         if normalize is not None:
@@ -434,13 +440,12 @@ class XgbModel:
             cm, interpolation="nearest", cmap=plt.cm.Blues, vmin=0, vmax=vmax
         )
 
-        plt.xticks([0, 1], [self.neg_name, self.pos_name], ha="center")
-        plt.yticks([0, 1], [self.neg_name, self.pos_name])
-
-        outpath = (
-            self.plot_dir
-            / f"confusion_{self.pos_name}_vs_{self.neg_name}_norm_{normalize}.pdf"
+        plt.xticks(
+            list(self.num_to_label.keys()), list(self.label_to_num.keys()), ha="center"
         )
+        plt.yticks(list(self.num_to_label.keys()), list(self.label_to_num.keys()))
+
+        outpath = self.plot_dir / f"confusion_{self.name}_norm_{normalize}.pdf"
 
         thresh = cm.max() / 2.0
 
