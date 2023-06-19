@@ -13,13 +13,12 @@ import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd
 import xgboost as xgb
+from elasticc2.taxonomy import var as vartax
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import RandomizedSearchCV  # type: ignore
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import class_weight
-
-from elasticc2.taxonomy import var as vartax
 
 logger = logging.getLogger(__name__)
 
@@ -231,11 +230,11 @@ class XgbModel:
         y_train_subset = y_train.sample(
             n=self.grid_search_sample_size, random_state=self.random_state + 5
         )
-        classes_weights = class_weight.compute_sample_weight(
+        class_weights = class_weight.compute_sample_weight(
             class_weight="balanced", y=y_train_subset
         )
         grid_result = grid_search.fit(
-            X_train_subset, y_train_subset, sample_weight=classes_weights
+            X_train_subset, y_train_subset, sample_weight=class_weights
         )
 
         """
@@ -249,9 +248,14 @@ class XgbModel:
         )
         logger.info("--------------------------------------------")
 
+        class_weights_full = class_weight.compute_sample_weight(
+            class_weight="balanced", y=y_train
+        )
+
         best_estimator = grid_result.best_estimator_.fit(
             self.df_train[self.cols_to_use],
             y_train,
+            sample_weight=class_weights_full,
         )
 
         self.grid_result = grid_result
@@ -419,7 +423,7 @@ class XgbModel:
         """
         Plot the confusion matrix for the binary classification
         """
-        fig, ax = plt.subplots(figsize=(5, 5))
+        fig, ax = plt.subplots(figsize=(10, 10))
         cm = confusion_matrix(
             y_true=y_true,
             y_pred=y_pred,

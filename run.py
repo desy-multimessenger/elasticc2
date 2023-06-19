@@ -131,7 +131,7 @@ def run_setup_multivar(num: int):
     model = XgbModel(
         tax=tax,
         name=name,
-        n_iter=10,
+        n_iter=1,
         path_to_featurefiles=path_to_featurefiles,
         max_taxlength=max_taxlength,
         n_threads=n_threads,
@@ -142,6 +142,6 @@ def run_setup_multivar(num: int):
     model.evaluate()
 
 
-for setup in [1, 2]:
-    max_taxlength = -1
-    run_setup_multivar(1)
+for setup in [2]:
+    max_taxlength = 10000
+    run_setup_multivar(setup)
