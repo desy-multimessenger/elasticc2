@@ -11,7 +11,8 @@ logger.setLevel(logging.INFO)
 
 config = load_config()
 # Path to extracted features
-# These will already include subselection based on ndet, restrictions on alerts per object and train/validation split
+# These will already include subselection based on ndet, restrictions on alerts per
+# object and train/validation split
 basedir = os.environ.get("ELASTICCDATA")
 if basedir is None:
     raise ValueError("Please set an environment-variable for 'ELASTICCDATA'")
