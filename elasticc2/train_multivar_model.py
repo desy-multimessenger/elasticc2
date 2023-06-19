@@ -433,7 +433,7 @@ class XgbModel:
             vmax = cm.max()
         elif normalize in ["pred", "true"]:
             cmlabel = "Fraction of objects"
-            fmt = ".4f"
+            fmt = ".2f"
             vmax = 1
         else:
             vmax = cm.max()
