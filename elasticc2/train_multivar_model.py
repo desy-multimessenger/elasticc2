@@ -427,9 +427,13 @@ class XgbModel:
             labels=list(self.num_to_label.keys()),
         )
 
-        if normalize is not None:
+        if normalize == "all":
             cmlabel = "Fraction of objects"
             fmt = ".2f"
+            vmax = cm.max()
+        elif normalize in ["pred", "true"]:
+            cmlabel = "Fraction of objects"
+            fmt = ".4f"
             vmax = 1
         else:
             vmax = cm.max()
