@@ -13,12 +13,13 @@ import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd
 import xgboost as xgb
-from elasticc2.taxonomy import var as vartax
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import RandomizedSearchCV  # type: ignore
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import class_weight
+
+from elasticc2.taxonomy import var as vartax
 
 logger = logging.getLogger(__name__)
 
@@ -249,7 +250,8 @@ class XgbModel:
         logger.info("--------------------------------------------")
 
         best_estimator = grid_result.best_estimator_.fit(
-            self.df_train[self.cols_to_use], y_train, sample_weight=classes_weights
+            self.df_train[self.cols_to_use],
+            y_train,
         )
 
         self.grid_result = grid_result
