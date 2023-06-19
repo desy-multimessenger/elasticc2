@@ -10,8 +10,10 @@ logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-if socket.gethostname() in ["wgs33.zeuthen.desy.de", "wg18.zeuthen.desy.de"]:
+if socket.gethostname() in ["wgs33.zeuthen.desy.de"]:
     n_threads = 32
+elif socket.gethostname() in ["wgs18.zeuthen.desy.de"]:
+    n_threads = 16
 else:
     n_threads = None
 
