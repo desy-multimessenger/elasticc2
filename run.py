@@ -163,6 +163,11 @@ def run_setup_binary(num: int):
 
     from elasticc2.train_binary_model import XgbModel
 
+    if neg_name == "long":
+        grid_search_sample_size = 1000000
+    else:
+        grid_search_sample_size = 10000
+
     model = XgbModel(
         pos_tax=pos_tax,
         neg_tax=neg_tax,
@@ -170,6 +175,7 @@ def run_setup_binary(num: int):
         n_iter=10,
         neg_name=neg_name,
         path_to_featurefiles=path_to_featurefiles,
+        grid_search_sample_size=grid_search_sample_size,
         max_taxlength=max_taxlength,
         n_threads=n_threads,
     )
@@ -199,10 +205,10 @@ def run_setup_multivar(num: int):
     model.evaluate()
 
 
-# for setup in [1, 2, 3, 4, 5, 6]:
-#     max_taxlength = -1
-#     run_setup_binary(setup)
-
-for setup in [2, 3]:
+for setup in [6]:
     max_taxlength = -1
-    run_setup_multivar(setup)
+    run_setup_binary(setup)
+
+# for setup in [2, 3]:
+#     max_taxlength = -1
+#     run_setup_multivar(setup)
