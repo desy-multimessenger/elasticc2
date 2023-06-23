@@ -91,6 +91,46 @@ setups_binary = {
     },
 }
 
+setups_binary_production = {
+    1: {
+        "key": "galactic",
+        "pos_tax": config["galactic"],
+        "neg_tax": tax.get_ids(exclude=config["galactic"]),
+        "neg_name": "non_galactic",
+    },
+    2: {
+        "key": "varstar_ulens",
+        "neg_name": "mdwarf_nova",
+        "pos_tax": [*tax.rec.periodic.get_ids(), *tax.ids_from_keys("ulens")],
+        "neg_tax": [tax.nrec.fast.mdwarf.id, tax.nrec.fast.nova.id],
+    },
+    3: {
+        "key": "nova",
+        "neg_name": "mdwarf",
+        "pos_tax": tax.ids_from_keys("nova"),
+        "neg_tax": tax.ids_from_keys("mdwarf"),
+    },
+    4: {
+        "key": "agn",
+        "neg_name": "kn_parsnip",
+        "pos_tax": tax.ids_from_keys("agn"),
+        "neg_tax": [
+            *tax.ids_from_keys("kn"),
+            *tax.nrec.sn.get_ids(),
+            *tax.nrec.long.get_ids(),
+        ],
+    },
+    5: {
+        "key": "kn",
+        "neg_name": "parsnip",
+        "pos_tax": tax.ids_from_keys("kn"),
+        "neg_tax": [
+            *tax.nrec.sn.get_ids(),
+            *tax.nrec.long.get_ids(),
+        ],
+    },
+}
+
 setups_multivar = {
     1: {"name": "stars", "tax": tax.rec.periodic.get_ids()},
     2: {
@@ -110,10 +150,10 @@ setups_multivar = {
 
 
 def run_setup_binary(num: int):
-    pos_tax = setups_binary[num]["pos_tax"]
-    neg_tax = setups_binary[num]["neg_tax"]
-    key = setups_binary[num]["key"]
-    neg_name = setups_binary[num]["neg_name"]
+    pos_tax = setups_binary_production[num]["pos_tax"]
+    neg_tax = setups_binary_production[num]["neg_tax"]
+    key = setups_binary_production[num]["key"]
+    neg_name = setups_binary_production[num]["neg_name"]
 
     from elasticc2.train_binary_model import XgbModel
 
@@ -153,6 +193,10 @@ def run_setup_multivar(num: int):
     model.evaluate()
 
 
-for setup in [1, 2, 3]:
+for setup in [1, 2, 3, 4, 5]:
     max_taxlength = -1
-    run_setup_multivar(setup)
+    run_setup_binary(setup)
+
+# for setup in [2]:
+#     max_taxlength = 10000
+#     run_setup_multivar(setup)
