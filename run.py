@@ -141,7 +141,7 @@ setups_multivar = {
     1: {"name": "stars", "tax": tax.rec.periodic.get_ids()},
     2: {
         "name": "stars_ulens",
-        "tax": [*tax.rec.periodic.get_ids(), tax.ids_from_keys("ulens")],
+        "tax": [*tax.rec.periodic.get_ids(), *tax.ids_from_keys("ulens")],
     },
     3: {
         "name": "stars_ulens_mdwarf_nova",
@@ -199,10 +199,10 @@ def run_setup_multivar(num: int):
     model.evaluate()
 
 
-for setup in [1, 2, 3, 4, 5, 6]:
-    max_taxlength = -1
-    run_setup_binary(setup)
+# for setup in [1, 2, 3, 4, 5, 6]:
+#     max_taxlength = -1
+#     run_setup_binary(setup)
 
-# for setup in [2]:
-#     max_taxlength = 10000
-#     run_setup_multivar(setup)
+for setup in [2, 3]:
+    max_taxlength = -1
+    run_setup_multivar(setup)
