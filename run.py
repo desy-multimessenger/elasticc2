@@ -129,6 +129,12 @@ setups_binary_production = {
             *tax.nrec.long.get_ids(),
         ],
     },
+    6: {
+        "key": "sn",
+        "neg_name": "long",
+        "pos_tax": tax.nrec.sn.get_ids(),
+        "neg_tax": tax.nrec.long.get_ids(),
+    },
 }
 
 setups_multivar = {
@@ -193,7 +199,7 @@ def run_setup_multivar(num: int):
     model.evaluate()
 
 
-for setup in [1, 2, 3, 4, 5]:
+for setup in [1, 2, 3, 4, 5, 6]:
     max_taxlength = -1
     run_setup_binary(setup)
 
