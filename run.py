@@ -93,8 +93,19 @@ setups_binary = {
 
 setups_multivar = {
     1: {"name": "stars", "tax": tax.rec.periodic.get_ids()},
-    2: {"name": "all", "tax": tax.get_ids()},
-    3: {"name": "nrec", "tax": tax.nrec.get_ids()},
+    2: {
+        "name": "stars_ulens",
+        "tax": [*tax.rec.periodic.get_ids(), tax.ids_from_keys("ulens")],
+    },
+    3: {
+        "name": "stars_ulens_mdwarf_nova",
+        "tax": [
+            *tax.rec.periodic.get_ids(),
+            *tax.ids_from_keys(["ulens", "mdwarf", "nova"]),
+        ],
+    },
+    4: {"name": "all", "tax": tax.get_ids()},
+    5: {"name": "nrec", "tax": tax.nrec.get_ids()},
 }
 
 
@@ -131,7 +142,7 @@ def run_setup_multivar(num: int):
     model = XgbModel(
         tax=tax,
         name=name,
-        n_iter=1,
+        n_iter=10,
         path_to_featurefiles=path_to_featurefiles,
         max_taxlength=max_taxlength,
         n_threads=n_threads,
@@ -142,6 +153,6 @@ def run_setup_multivar(num: int):
     model.evaluate()
 
 
-for setup in [2]:
-    max_taxlength = 10000
+for setup in [1, 2, 3]:
+    max_taxlength = -1
     run_setup_multivar(setup)
