@@ -140,9 +140,6 @@ class XgbModel:
             df = df.drop(columns=["stock"])
             df["target"] = taxclass in self.pos_tax
 
-            print(df.target)
-            quit()
-
             df = df.fillna(np.nan)
 
             if fulldf is None:
