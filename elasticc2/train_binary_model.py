@@ -234,6 +234,22 @@ class XgbModel:
             n=self.grid_search_sample_size, random_state=self.random_state + 5
         )
 
+        length = len(y_train_subset)
+        pos_length = 0
+        neg_length = 0
+        for entry in y_train_subset.values:
+            if entry == True:
+                pos_length += 1
+            else:
+                neg_length += 1
+
+        pos_fraction = pos_length / length * 100
+        neg_fraction = neg_length / length * 100
+
+        logger.info(
+            f"Class balance: Pos = {pos_fraction:.2f}% / Neg = {neg_fraction:.2f}%"
+        )
+
         grid_result = grid_search.fit(X_train_subset, y_train_subset)
 
         """
