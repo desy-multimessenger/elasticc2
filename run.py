@@ -153,6 +153,14 @@ setups_multivar = {
     4: {"name": "all", "tax": tax.get_ids()},
     5: {"name": "nrec", "tax": tax.nrec.get_ids()},
     6: {"name": "sn_long", "tax": [*tax.nrec.sn.get_ids(), *tax.nrec.long.get_ids()]},
+    7: {
+        "name": "agn_kn_sn_long",
+        "tax": [
+            *tax.ids_from_keys(["kn, agn"]),
+            *tax.nrec.sn.get_ids(),
+            *tax.nrec.long.get_ids(),
+        ],
+    },
 }
 
 
@@ -210,6 +218,6 @@ def run_setup_multivar(num: int):
 #     max_taxlength = -1
 #     run_setup_binary(setup)
 
-for setup in [2, 3]:
+for setup in [1, 2, 3, 6, 7, 5, 4]:
     max_taxlength = -1
     run_setup_multivar(setup)
