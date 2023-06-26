@@ -246,7 +246,7 @@ class XgbModel:
         logger.info(
             f"\n\n{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}"
             "\nNow fitting with the best estimator from the grid search "
-            f"\nfor {len(self.tax)} classes"
+            f"for {len(self.tax)} classes"
             f"\n({self.name}: {', '.join(vartax.keys_from_ids(self.tax))})."
             "\nThis will take time\n",
         )
