@@ -242,15 +242,15 @@ class XgbModel:
         Run the actual training with the best estimator
         on the full training sample
         """
-        logger.info("--------------------------------------------")
         logger.info(
-            f"\n\n{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}"
-            "\nNow fitting with the best estimator from the grid search "
-            f"for {len(self.tax)} classes"
-            f"\n({self.name}: {', '.join(vartax.keys_from_ids(self.tax))})."
-            "\nThis will take time\n",
+            f"\n\n{'':-^42}\n"
+            f"{'START FITTING':^42}\n"
+            "Now fitting with the best estimator from the grid search "
+            f"for {len(self.tax)} classes\n"
+            f"({self.name}: {', '.join(vartax.keys_from_ids(self.tax))}).\n"
+            f"This will take time\n"
+            f"{'':-^42}\n"
         )
-        logger.info("--------------------------------------------")
 
         class_weights_full = class_weight.compute_sample_weight(
             class_weight="balanced", y=y_train
@@ -275,12 +275,16 @@ class XgbModel:
         )
 
         t_end = time.time()
+        t_delta = (t_end - t_start) / 60
+        duration_str = f"This took {t_delta:1.1f} minutes"
 
-        logger.info("------------------------------------")
-        logger.info("           FITTING DONE             ")
-        logger.info(f" {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}")
-        logger.info(f"  This took {(t_end-t_start)/60} minutes")
-        logger.info("------------------------------------")
+        logger.info(
+            f"\n\n{'':-^42}\n"
+            f"{'FITTING DONE':^42}\n"
+            f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()):^42}\n"
+            f"{duration_str:^42}\n"
+            f"{'':-^42}\n"
+        )
 
     def evaluate(self):
         """
