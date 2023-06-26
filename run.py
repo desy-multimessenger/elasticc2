@@ -218,6 +218,6 @@ def run_setup_multivar(num: int):
 #     max_taxlength = -1
 #     run_setup_binary(setup)
 
-for setup in [7, 1, 2, 3, 5, 4]:
+for setup in [1, 7, 2, 3, 5, 4]:
     max_taxlength = -1
     run_setup_multivar(setup)
