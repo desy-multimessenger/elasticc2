@@ -244,8 +244,11 @@ class XgbModel:
         """
         logger.info("--------------------------------------------")
         logger.info(
-            "\n\nNow fitting with the best estimator from the grid search. "
-            "This will take time\n"
+            f"\n\n{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}",
+            "\nNow fitting with the best estimator from the grid search "
+            f"\nfor {len(self.tax)} classes"
+            f"\n({self.name}: {', '.join(vartax.keys_from_ids(self.tax))})."
+            "\nThis will take time\n",
         )
         logger.info("--------------------------------------------")
 
@@ -275,6 +278,7 @@ class XgbModel:
 
         logger.info("------------------------------------")
         logger.info("           FITTING DONE             ")
+        logger.info(f" {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}")
         logger.info(f"  This took {(t_end-t_start)/60} minutes")
         logger.info("------------------------------------")
 
