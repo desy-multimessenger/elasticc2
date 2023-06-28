@@ -12,14 +12,14 @@ import joblib  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd
+
 import xgboost as xgb
+from elasticc2.taxonomy import var as vartax
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import RandomizedSearchCV  # type: ignore
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import class_weight
-
-from elasticc2.taxonomy import var as vartax
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +49,7 @@ class XgbModel:
         grid_search_sample_size: int = 10000,
         cols_to_use: list[str] = [],
         n_threads: int | None = None,
+        objective: str | None = None,
     ) -> None:
         self.tax = tax
         self.name = name
@@ -64,6 +65,11 @@ class XgbModel:
         self.create_dirs()
         self.df_train = self.read_featuredata(training=True)
         self.df_val = self.read_featuredata(training=False)
+
+        if objective is None:
+            self.objective = "multi:softmax"
+        else:
+            self.objective = objective
 
         if len(cols_to_use) > 0:
             # Use input features
@@ -164,14 +170,6 @@ class XgbModel:
         """
         raise ("NotImplementedError")
 
-    # def create_map(self, labels):
-    #     returndict = {}
-    #     if all([isinstance(i, int) for i in labels]):
-    #         for i in labels:
-    #             returndict.update({i: taxvar.keys_from_ids(i)})
-
-    #     print(returndict)
-
     def train(self):
         """
         Do the training
@@ -182,7 +180,7 @@ class XgbModel:
 
         model = xgb.XGBClassifier(
             random_state=self.random_state,
-            objective="multi:softmax",
+            objective=self.objective,
             num_class=self.n_classes,
             eval_metric="aucpr",
             colsample_bytree=1.0,
