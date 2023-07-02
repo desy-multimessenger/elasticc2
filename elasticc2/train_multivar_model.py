@@ -243,6 +243,7 @@ class XgbModel:
         logger.info(
             f"\n\n{'':-^42}\n"
             f"{'START FITTING':^42}\n"
+            f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()):^42}\n"
             "Now fitting with the best estimator from the grid search "
             f"for {len(self.tax)} classes\n"
             f"({self.name}: {', '.join(vartax.keys_from_ids(self.tax))}).\n"
