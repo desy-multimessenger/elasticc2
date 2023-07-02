@@ -24,7 +24,7 @@ config = load_config()
 basedir = os.environ.get("ELASTICCDATA")
 if basedir is None:
     raise ValueError("Please set an environment-variable for 'ELASTICCDATA'")
-path_to_featurefiles = Path(basedir) / "feature_extraction" / "trainset_all_max3"
+path_to_featurefiles = Path(basedir) / "feature_extraction" / "trainset"
 
 setups_binary = {
     1: {
