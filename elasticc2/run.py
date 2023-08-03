@@ -3,6 +3,7 @@ import logging
 import os
 import socket
 from pathlib import Path
+from pprint import pprint
 
 from elasticc2.taxonomy import var as tax
 from elasticc2.utils import load_config
@@ -171,6 +172,7 @@ def run_xgb() -> None:
         # ["-m", "--mode"],
         # required=True,
         # type=str,
+        metavar="mode",
         choices=["bin", "multi"],
         help=(
             "Specifies the XGB configurarion. "
@@ -203,7 +205,22 @@ def run_xgb() -> None:
         ),
     )
 
+    parser.add_argument(
+        "-L",
+        "--list",
+        action="store_true",
+        help="Prints the list of available setups for given mode and quits.",
+    )
+
     args: argparse.Namespace = parser.parse_args()
+
+    if args.list:
+        if args.mode == "bin":
+            pprint(setups_binary, sort_dicts=False)
+        else:
+            pprint(setups_multivar, sort_dicts=False)
+        quit()
+
     print(f"Running XGB with config: {args}")
 
     # Selects run method and setup dictionary from corresponding XGB mode
