@@ -8,10 +8,11 @@ import re
 import time
 from pathlib import Path
 
-import joblib  # type: ignore
-import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd
+
+import joblib  # type: ignore
+import matplotlib.pyplot as plt  # type: ignore
 import xgboost as xgb
 from elasticc2.taxonomy import var as tax
 from sklearn import metrics  # type: ignore
@@ -272,10 +273,6 @@ class XgbModel:
 
         outpath_grid = self.model_dir / "grid_result"
 
-        # outpath_model = (
-        #     self.model_dir
-        #     / f"model_pos{'-'.join(map(str,self.pos_tax))}_neg{'-'.join(map(str,self.neg_tax))}"
-        # )
         outpath_model = self.model_dir / f"model_{self.pos_name}_vs_{self.neg_name}"
 
         joblib.dump(grid_result, outpath_grid)
