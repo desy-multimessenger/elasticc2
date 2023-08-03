@@ -227,7 +227,7 @@ def run_xgb() -> None:
     if args.mode == "bin":
         run_method = run_setup_binary
         setup_dict = setups_binary
-    if args.mode == "multi":
+    elif args.mode == "multi":
         run_method = run_setup_multivar
         setup_dict = setups_multivar
     else:
