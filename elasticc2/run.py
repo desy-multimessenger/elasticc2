@@ -186,8 +186,8 @@ def run_xgb() -> None:
         # const=None,
         nargs="+",
         help=(
-            "Specifies a list of preconfigured train setups. Training is performed on "
-            "setups in the same order as supplied in the lis. "
+            "Specifies a list of preconfigured training setups. Training is performed "
+            "on setups in the same order as supplied in the list. "
             "Default is to run all setups. "
             "Example usage: -s 1 2 3"
         ),
@@ -198,7 +198,7 @@ def run_xgb() -> None:
         default=-1,
         type=int,
         help=(
-            "Limits the number of samples included in the training per taxonomy class. "
+            "Limits the number of samples per taxonomy class included in the training. "
             "Default is to use the complete data set (-1). "
         ),
     )
