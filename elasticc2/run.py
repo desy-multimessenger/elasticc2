@@ -150,15 +150,6 @@ def run_setup_multivar(num: int, max_taxlength: int):
     model.evaluate()
 
 
-# for setup in [6]:
-#     max_taxlength = -1
-#     run_setup_binary(setup)
-
-# for setup in [2, 1, 3, 6, 7, 5, 4]:
-#     max_taxlength = -1
-#     run_setup_multivar(setup)
-
-
 def run_xgb() -> None:
     """
     Executes to model training
@@ -169,9 +160,6 @@ def run_xgb() -> None:
     )
     parser.add_argument(
         "mode",
-        # ["-m", "--mode"],
-        # required=True,
-        # type=str,
         metavar="mode",
         choices=["bin", "multi"],
         help=(
@@ -184,8 +172,6 @@ def run_xgb() -> None:
         "--setups",
         type=int,
         default=None,
-        # action="store_const",
-        # const=None,
         nargs="+",
         help=(
             "Specifies a list of preconfigured training setups. Training is performed "
@@ -214,6 +200,7 @@ def run_xgb() -> None:
 
     args: argparse.Namespace = parser.parse_args()
 
+    # Prints list of available setups and quits
     if args.list:
         if args.mode == "bin":
             pprint(setups_binary, sort_dicts=False)
