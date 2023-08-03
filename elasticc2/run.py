@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 import socket
@@ -26,7 +27,7 @@ if basedir is None:
     raise ValueError("Please set an environment-variable for 'ELASTICCDATA'")
 path_to_featurefiles = Path(basedir) / "feature_extraction" / "trainset"
 
-setups_binary_production = {
+setups_binary = {
     1: {
         "key": "galactic",
         "pos_tax": config["galactic"],
@@ -99,11 +100,11 @@ setups_multivar = {
 }
 
 
-def run_setup_binary(num: int):
-    pos_tax = setups_binary_production[num]["pos_tax"]
-    neg_tax = setups_binary_production[num]["neg_tax"]
-    key = setups_binary_production[num]["key"]
-    neg_name = setups_binary_production[num]["neg_name"]
+def run_setup_binary(num: int, max_taxlength: int):
+    pos_tax = setups_binary[num]["pos_tax"]
+    neg_tax = setups_binary[num]["neg_tax"]
+    key = setups_binary[num]["key"]
+    neg_name = setups_binary[num]["neg_name"]
 
     from elasticc2.train_binary_model import XgbModel
 
@@ -126,7 +127,7 @@ def run_setup_binary(num: int):
     model.evaluate()
 
 
-def run_setup_multivar(num: int):
+def run_setup_multivar(num: int, max_taxlength: int):
     tax = setups_multivar[num]["tax"]
     name = setups_multivar[num]["name"]
 
@@ -148,10 +149,86 @@ def run_setup_multivar(num: int):
     model.evaluate()
 
 
-for setup in [6]:
-    max_taxlength = -1
-    run_setup_binary(setup)
+# for setup in [6]:
+#     max_taxlength = -1
+#     run_setup_binary(setup)
 
 # for setup in [2, 1, 3, 6, 7, 5, 4]:
 #     max_taxlength = -1
 #     run_setup_multivar(setup)
+
+
+def run_xgb() -> None:
+    """
+    Executes to model training
+    """
+    # Argument parsing
+    parser: argparse.ArgumentParser = argparse.ArgumentParser(
+        description="XGB classifier training for ELAsTiCC 2",
+    )
+    parser.add_argument(
+        "mode",
+        # ["-m", "--mode"],
+        # required=True,
+        # type=str,
+        choices=["bin", "multi"],
+        help=(
+            "Specifies the XGB configurarion. "
+            "Either binary ('bin') or multivariate ('multi')."
+        ),
+    )
+    parser.add_argument(
+        "-s",
+        "--setups",
+        type=int,
+        default=None,
+        # action="store_const",
+        # const=None,
+        nargs="+",
+        help=(
+            "Specifies a list of preconfigured train setups. Training is performed on "
+            "setups in the same order as supplied in the lis. "
+            "Default is to run all setups. "
+            "Example usage: -s 1 2 3"
+        ),
+    )
+    parser.add_argument(
+        "-l",
+        "--max-taxlength",
+        default=-1,
+        type=int,
+        help=(
+            "Limits the number of samples included in the training per taxonomy class. "
+            "Default is to use the complete data set (-1). "
+        ),
+    )
+
+    args: argparse.Namespace = parser.parse_args()
+    print(f"Running XGB with config: {args}")
+
+    # Selects run method and setup dictionary from corresponding XGB mode
+    if args.mode == "bin":
+        run_method = run_setup_binary
+        setup_dict = setups_binary
+    if args.mode == "multi":
+        run_method = run_setup_multivar
+        setup_dict = setups_multivar
+    else:
+        raise ValueError(f"Unknown XGB mode '{args.mode}'.")
+
+    # Sets the training setup
+    if args.setups is None:
+        setups = list(setup_dict.keys())
+    else:
+        setups = args.setups
+
+    # Sets the sample limit
+    max_taxlength = args.max_taxlength
+
+    # Run
+    for setup in setups:
+        run_method(setup, max_taxlength)
+
+
+if __name__ == "__main__":
+    run_xgb()
