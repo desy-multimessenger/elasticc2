@@ -24,9 +24,10 @@ config = load_config()
 # These will already include subselection based on ndet, restrictions on alerts per
 # object and train/validation split
 basedir = os.environ.get("ELASTICCDATA")
+
 if basedir is None:
     raise ValueError("Please set an environment-variable for 'ELASTICCDATA'")
-path_to_featurefiles = Path(basedir) / "feature_extraction" / "trainset"
+path_to_featurefiles = Path(basedir) / "feature_extraction" / "trainset_parsniptest"
 
 setups_binary = {
     1: {

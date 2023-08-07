@@ -12,14 +12,14 @@ import joblib  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd
-
-import xgboost as xgb
-from elasticc2.taxonomy import var as vartax
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import RandomizedSearchCV  # type: ignore
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import class_weight
+
+import xgboost as xgb
+from elasticc2.taxonomy import var as vartax
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +135,7 @@ class XgbModel:
                 df = df.sample(n=self.max_taxlength, random_state=self.random_state)
             userows = df.shape[0]
 
-            df = df.drop(columns=["stock"])
+            df = df.drop(columns=["stock", "true"])
 
             df["target"] = vartax.keys_from_ids(taxclass)[0]
 
@@ -145,6 +145,7 @@ class XgbModel:
                 fulldf = df
             else:
                 fulldf = pd.concat([fulldf, df], ignore_index=True)
+
             self.readlog.append([taxclass, fname, inrows, userows])
 
         self.n_classes = len(fulldf.target.unique())
@@ -314,59 +315,6 @@ class XgbModel:
         evaluation_bins, nbins = self.get_optimal_bins(nbins=14)
 
         self.evaluation_bins = evaluation_bins
-
-        logger.info(f"\nWe now plot the evaluation using {nbins} time bins")
-
-        # precision_list = []
-        # recall_list = []
-        # aucpr_list = []
-        # timebin_mean_list = []
-
-        # for timebin in evaluation_bins:
-        #     df_test_bin = self.df_test_subsample[
-        #         (self.df_test_subsample["ndet"] >= timebin[0])
-        #         & (self.df_test_subsample["ndet"] <= timebin[1])
-        #     ]
-
-        #     features = df_test_bin[self.cols_to_use]
-        #     target = df_test_bin.target
-
-        #     pred = best_estimator.predict(features)
-
-        #     precision_list.append(metrics.precision_score(target, pred))
-        #     recall_list.append(metrics.recall_score(target, pred))
-        #     aucpr_list.append(metrics.average_precision_score(target, pred))
-
-        #     timebin_mean_list.append(np.mean([timebin[0], timebin[1]]))
-
-        # outfiles = [
-        #     self.plot_dir / f"{i}_{self.pos_name}_vs_{self.neg_name}.pdf"
-        #     for i in ["precision", "recall", "aucpr"]
-        # ]
-
-        # fig, ax = plt.subplots(figsize=(5, 5))
-        # ax.scatter(timebin_mean_list, precision_list)
-        # ax.set_xlabel("ndet interval center")
-        # ax.set_ylabel("precision")
-        # ax.set_ylim([0.5, 1])
-        # fig.savefig(outfiles[0], dpi=300)
-        # plt.close()
-
-        # fig, ax = plt.subplots(figsize=(5, 5))
-        # ax.scatter(timebin_mean_list, recall_list)
-        # ax.set_xlabel("ndet interval center")
-        # ax.set_ylabel("recall")
-        # ax.set_ylim([0.75, 1])
-        # fig.savefig(outfiles[1], dpi=300)
-        # plt.close()
-
-        # fig, ax = plt.subplots(figsize=(5, 5))
-        # ax.scatter(timebin_mean_list, aucpr_list)
-        # ax.set_xlabel("ndet interval center")
-        # ax.set_ylabel("aucpr")
-        # ax.set_ylim([0.5, 1])
-        # fig.savefig(outfiles[2], dpi=300)
-        # plt.close()
 
         # now we plot the confusion matrix
 
