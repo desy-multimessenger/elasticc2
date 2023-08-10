@@ -8,17 +8,17 @@ import re
 import time
 from pathlib import Path
 
+import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd
-
-import joblib  # type: ignore
-import matplotlib.pyplot as plt  # type: ignore
-import xgboost as xgb
-from elasticc2.taxonomy import var as tax
 from sklearn import metrics  # type: ignore
 from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import RandomizedSearchCV  # type: ignore
 from sklearn.model_selection import StratifiedKFold
+
+import joblib  # type: ignore
+import xgboost as xgb
+from elasticc2.taxonomy import var as tax
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +138,7 @@ class XgbModel:
                 df = df.sample(n=self.max_taxlength, random_state=self.random_state)
             userows = df.shape[0]
 
-            df = df.drop(columns=["stock"])
+            df = df.drop(columns=["stock", "true"])
             df["target"] = taxclass in self.pos_tax
 
             df = df.fillna(np.nan)
