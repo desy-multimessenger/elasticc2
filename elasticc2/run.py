@@ -110,7 +110,10 @@ def run_setup_binary(num: int, max_taxlength: int):
 
     from elasticc2.train_binary_model import XgbModel
 
-    grid_search_sample_size = 10000
+    if num == 3:
+        grid_search_sample_size = 1000
+    else:
+        grid_search_sample_size = 10000
 
     model = XgbModel(
         pos_tax=pos_tax,
