@@ -8,7 +8,6 @@ import re
 import time
 from pathlib import Path
 
-import joblib  # type: ignore
 import matplotlib.pyplot as plt  # type: ignore
 import numpy as np
 import pandas as pd
@@ -18,6 +17,7 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import class_weight
 
+import joblib  # type: ignore
 import xgboost as xgb
 from elasticc2.taxonomy import var as vartax
 
@@ -135,7 +135,11 @@ class XgbModel:
                 df = df.sample(n=self.max_taxlength, random_state=self.random_state)
             userows = df.shape[0]
 
-            df = df.drop(columns=["stock", "true"])
+            cols_to_drop = [
+                colname for colname in df.keys() if colname in ["stock", "true"]
+            ]
+
+            df = df.drop(columns=cols_to_drop)
 
             df["target"] = vartax.keys_from_ids(taxclass)[0]
 

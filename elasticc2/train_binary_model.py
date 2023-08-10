@@ -138,7 +138,11 @@ class XgbModel:
                 df = df.sample(n=self.max_taxlength, random_state=self.random_state)
             userows = df.shape[0]
 
-            df = df.drop(columns=["stock", "true"])
+            cols_to_drop = [
+                colname for colname in df.keys() if colname in ["stock", "true"]
+            ]
+
+            df = df.drop(columns=cols_to_drop)
             df["target"] = taxclass in self.pos_tax
 
             df = df.fillna(np.nan)
