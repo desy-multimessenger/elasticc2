@@ -114,6 +114,8 @@ class XgbModel:
                 f.extractall(path=self.path_to_featurefiles.parents[0])
             logger.info("Extraction done")
 
+
+
         if training:
             files = glob.glob(
                 str(self.path_to_featurefiles / "features*_train.parquet")
@@ -125,12 +127,25 @@ class XgbModel:
 
         fulldf = None
 
+        # The elasticc case with individual feature files for each taxonomy class
         for fname in files:
-            taxclass = int(re.search(r"features_(\d+)_ndet", fname)[1])
-            if taxclass not in self.pos_tax + self.neg_tax:
-                continue
+            print(fname)
+            
+            # Format either with each taxonmy class as individual files, or a joint one
+            if (ndetmatch:=re.search(r"features_(\d+)_ndet", fname)) is not None:
+                print(ndetmatch)
+                taxclass = int(ndetmatch[1])
+                if taxclass not in self.pos_tax + self.neg_tax:
+                    continue
+                df = pd.read_parquet(fname)
+                df["target"] = taxclass in self.pos_tax
+            else:
+                # Assuming pure file with taxonomy "taxid" column 
+                df = pd.read_parquet(fname)
+                df['target'] = df['taxid'].apply(lambda x: x in self.pos_tax)
+                df = df.drop(columns=['taxid'])
 
-            df = pd.read_parquet(fname)
+ 
             inrows = df.shape[0]
 
             # Limit rows per class
@@ -142,16 +157,19 @@ class XgbModel:
                 colname for colname in df.keys() if colname in ["stock", "true"]
             ]
 
-            df = df.drop(columns=cols_to_drop)
-            df["target"] = taxclass in self.pos_tax
-
+            df = df.drop(columns=cols_to_drop) 
             df = df.fillna(np.nan)
 
             if fulldf is None:
                 fulldf = df
             else:
                 fulldf = pd.concat([fulldf, df], ignore_index=True)
-            self.readlog.append([taxclass, fname, inrows, userows])
+            self.readlog.append([self.pos_tax, fname, inrows, userows])
+            
+        
+        # Go through columns and look for weirdly distributed
+        #for col in fulldf.columns:
+        #    print(col, np.mean(fulldf[col]), np.std(fulldf[col]), np.min(fulldf[col]), np.max(fulldf[col]) )
 
         return fulldf
 
@@ -207,6 +225,19 @@ class XgbModel:
             "min_child_weight": [1, 3, 5, 7],
             "n_estimators": [100, 250, 500, 1000],
         }
+        # Copied from aug 17 elasticc run
+        param_grid = {
+            "learning_rate": [0.1, 0.01, 0.5],
+            "gamma": [1, 1.5, 2, 2.5],
+            "max_depth": [10, 12, 14],
+            "colsample_bytree": [0.1, 0.3, 0.6, 0.8, 1.0],
+            "subsample": [0.4, 0.5, 0.6, 0.7, 0.8],
+            "reg_alpha": [0.5, 1, 1.5],
+            "reg_lambda": [2, 3, 4],
+            "min_child_weight": [1, 5],
+            "n_estimators": [500],
+        }
+
 
         kfold = StratifiedKFold(
             n_splits=5, shuffle=True, random_state=self.random_state + 3

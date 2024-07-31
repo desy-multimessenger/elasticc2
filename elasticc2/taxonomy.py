@@ -18,6 +18,7 @@ Alert
     │   │   ├── 2223 Ib/c
     │   │   ├── 2224 II
     │   │   ├── 2225 Iax
+    │   │   ├── 2227 IIn
     │   │   └── 2226 91bg
     │   ├── 2230 Fast
     │   │   ├── 2231 Fast/Other
@@ -263,6 +264,7 @@ class SN(TaxBase):
     snii: TaxBase
     sniax: TaxBase
     sn91bg: TaxBase
+    sniin: TaxBase
 
 
 @dataclasses.dataclass(frozen=True)
@@ -370,6 +372,7 @@ sn = SN(
     snii=TaxBase(2224, "snii", 4),
     sniax=TaxBase(2225, "sniax", 4),
     sn91bg=TaxBase(2226, "sn91bg", 4),
+    sniin=TaxBase(2227, "sniin", 4),
 )
 
 fast = Fast(

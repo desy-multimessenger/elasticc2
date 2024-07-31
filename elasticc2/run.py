@@ -27,7 +27,8 @@ basedir = os.environ.get("ELASTICCDATA")
 
 if basedir is None:
     raise ValueError("Please set an environment-variable for 'ELASTICCDATA'")
-path_to_featurefiles = Path(basedir) / "feature_extraction" / "trainset_parsniptest"
+#path_to_featurefiles = Path(basedir) / "feature_extraction" / "trainset_parsniptest"
+path_to_featurefiles = Path(basedir)
 
 setups_binary = {
     1: {
@@ -72,6 +73,27 @@ setups_binary = {
         "neg_name": "long",
         "pos_tax": tax.nrec.sn.get_ids(),
         "neg_tax": tax.nrec.long.get_ids(),
+    },
+    7: {
+        "key": "snia",
+        "neg_name": "snlong",
+        "pos_tax": tax.ids_from_keys("snia"),
+        "neg_tax": [
+            tax.ids_from_keys("snibc"),
+            tax.ids_from_keys("snii"),
+            tax.ids_from_keys("sniin"),
+            tax.ids_from_keys("sniax"),
+            tax.ids_from_keys("sn91bg"),
+            tax.nrec.long.get_ids(),
+        ],
+    },
+    8: {
+        "key": "snia",
+        "neg_name": "snibc",
+        "pos_tax": tax.ids_from_keys("snia"),
+        "neg_tax": [
+            tax.ids_from_keys("snibc"),
+        ],
     },
 }
 
