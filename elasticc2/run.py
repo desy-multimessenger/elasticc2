@@ -25,10 +25,6 @@ config = load_config()
 # object and train/validation split
 basedir = os.environ.get("ELASTICCDATA")
 
-if basedir is None:
-    raise ValueError("Please set an environment-variable for 'ELASTICCDATA'")
-#path_to_featurefiles = Path(basedir) / "feature_extraction" / "trainset_parsniptest"
-path_to_featurefiles = Path(basedir)
 
 setups_binary = {
     1: {
@@ -95,6 +91,14 @@ setups_binary = {
             tax.ids_from_keys("snibc"),
         ],
     },
+    9: {
+        "key": "snii",
+        "neg_name": "snibc",
+        "pos_tax": tax.ids_from_keys("snii"),
+        "neg_tax": [
+            tax.ids_from_keys("snibc"),
+        ],
+    },
 }
 
 setups_multivar = {
@@ -124,7 +128,7 @@ setups_multivar = {
 }
 
 
-def run_setup_binary(num: int, max_taxlength: int):
+def run_setup_binary(num: int, max_taxlength: int, path_to_featurefiles: str):
     pos_tax = setups_binary[num]["pos_tax"]
     neg_tax = setups_binary[num]["neg_tax"]
     key = setups_binary[num]["key"]
@@ -154,7 +158,7 @@ def run_setup_binary(num: int, max_taxlength: int):
     model.evaluate()
 
 
-def run_setup_multivar(num: int, max_taxlength: int):
+def run_setup_multivar(num: int, max_taxlength: int, path_to_featurefiles: str):
     tax = setups_multivar[num]["tax"]
     name = setups_multivar[num]["name"]
 
@@ -216,6 +220,17 @@ def run_xgb() -> None:
             "Default is to use the complete data set (-1). "
         ),
     )
+    parser.add_argument(
+        "-d",
+        "--dirpath",
+        default=None,
+        type=str,
+        help=(
+            "Path to folder containing training and validation feature files. "
+            "Default is to use the environment variable 'ELASTICCDATA'. "
+            "Feature files assumed to be called features*[train|validate].parquet."
+        ),
+    )
 
     parser.add_argument(
         "-L",
@@ -251,13 +266,24 @@ def run_xgb() -> None:
         setups = list(setup_dict.keys())
     else:
         setups = args.setups
+        
+    # Set the path to training failes
+    if args.dirpath is None:
+        if basedir is None:
+            raise ValueError("Please provide input dir or set an environment-variable for 'ELASTICCDATA'")
+        path_to_featurefiles = Path(basedir)
+    else:
+        path_to_featurefiles = Path(args.dirpath)
+
 
     # Sets the sample limit
     max_taxlength = args.max_taxlength
+    
+    print("path", path_to_featurefiles) 
 
     # Run
     for setup in setups:
-        run_method(setup, max_taxlength)
+        run_method(setup, max_taxlength, path_to_featurefiles)
 
 
 if __name__ == "__main__":
