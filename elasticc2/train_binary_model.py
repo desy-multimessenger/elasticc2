@@ -140,10 +140,16 @@ class XgbModel:
                 df = pd.read_parquet(fname)
                 df["target"] = taxclass in self.pos_tax
             else:
-                # Assuming pure file with taxonomy "taxid" column 
+                # Assuming pure file with taxonomy  "taxid" column 
                 df = pd.read_parquet(fname)
+                print('Initial size', df.shape)
+                taxmask = df['taxid'].apply(lambda x: x in self.pos_tax + self.neg_tax)
+                df = df[taxmask]
+                print('After tax cut', df.shape)
                 df['target'] = df['taxid'].apply(lambda x: x in self.pos_tax)
+                print('Positive len', sum(df['target']))
                 df = df.drop(columns=['taxid'])
+                # Ah - here we need to drop rows neither in pos_tax nor neg_tax
 
  
             inrows = df.shape[0]
@@ -237,7 +243,19 @@ class XgbModel:
             "min_child_weight": [1, 5],
             "n_estimators": [500],
         }
-
+        # New revision after noiztf risedecline+parsnip runs
+        param_grid = {
+            "learning_rate": [0.05, 0.1, 0.15],
+            "gamma": [1.3, 1.5, 1.7, 1.9],
+            "max_depth": [11, 12, 13],
+            "colsample_bytree": [0.9, 1.0],
+            "subsample": [0.75, 0.8, 0.85, 0.9],
+            "reg_alpha": [0.3, 0.5, 0.7],
+            "reg_lambda": [1.5, 2, 2.5],
+            "min_child_weight": [1, 2],
+            "n_estimators": [500],
+        }
+        
 
         kfold = StratifiedKFold(
             n_splits=5, shuffle=True, random_state=self.random_state + 3
@@ -349,12 +367,23 @@ class XgbModel:
 
         logger.info(f"Best: {grid_result.best_score_} using {grid_result.best_params_}")
 
+
+        ## Plot scores vs number of detections
+        # Using ndet if existing as explicit parameters (a la RiseDecline), otherwise grabs Parsnip mesure
+        if "ndet" in self.df_test_subsample.columns:
+            ndetections = self.df_test_subsample.ndet.values
+        elif "t_lc" in self.df_test_subsample.columns:
+            ndetections = self.df_test_subsample.t_lc.values
+        else:
+            ndetections = self.df_test_subsample.count_s2n_3
+
+
         # We get even sized binning (at least as far as possible)
-        evaluation_bins, nbins = self.get_optimal_bins(nbins=14)
+        evaluation_bins, nbins = self.get_optimal_bins(ndetections, nbins=14)
+        logger.info(f"\nWe now plot the evaluation using {nbins} time bins")
 
         self.evaluation_bins = evaluation_bins
 
-        logger.info(f"\nWe now plot the evaluation using {nbins} time bins")
 
         precision_list = []
         recall_list = []
@@ -363,8 +392,8 @@ class XgbModel:
 
         for timebin in evaluation_bins:
             df_test_bin = self.df_test_subsample[
-                (self.df_test_subsample["ndet"] >= timebin[0])
-                & (self.df_test_subsample["ndet"] <= timebin[1])
+                (ndetections >= timebin[0])
+                & (ndetections <= timebin[1])
             ]
 
             features = df_test_bin[self.cols_to_use]
@@ -421,13 +450,13 @@ class XgbModel:
         self.plot_confusion(y_true=y_true, y_pred=y_pred, normalize="pred")
         self.plot_confusion(y_true=y_true, y_pred=y_pred, normalize="true")
 
-    def get_optimal_bins(self, nbins=20):
+    def get_optimal_bins(self, ndet, nbins=20):
         """
         Determine optimal time bins (requirement: same number of alerts per bin).
         This cannot always be fulfilled, so duplicates=drop is passed.
         """
         out, bins = pd.qcut(
-            self.df_test_subsample.ndet.values, nbins, retbins=True, duplicates="drop"
+            ndet, nbins, retbins=True, duplicates="drop"
         )
         final_bins = []
         for i in range(len(bins) - 1):

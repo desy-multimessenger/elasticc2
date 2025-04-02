@@ -123,11 +123,9 @@ class XgbModel:
         fulldf = None
 
         for fname in files:
-            print(fname)
             
             # Format either with each taxonmy class as individual files, or a joint one
             if (ndetmatch:=re.search(r"features_(\d+)_ndet", fname)) is not None:
-                print(ndetmatch)
                 taxclass = int(ndetmatch[1])
                 if taxclass not in self.pos_tax + self.neg_tax:
                     continue
@@ -225,7 +223,18 @@ class XgbModel:
             "min_child_weight": [1, 5],
             "n_estimators": [500],
         }
-
+        # updated sep 26 2024 based on noiztf trial runs
+        param_grid = {
+            "learning_rate": [0.1, 0.01, 0.5],
+            "gamma": [0.8, 1, 1.5, 2],
+            "max_depth": [11, 12, 13],
+            "colsample_bytree": [0.6, 0.8, 1.0],
+            "subsample": [0.75, 0.8],
+            "reg_alpha": [0.4, 0.5, 0.6],
+            "reg_lambda": [1.5, 2, 2.5],
+            "min_child_weight": [1, 2],
+            "n_estimators": [200, 500, 1000],
+        }
         kfold = StratifiedKFold(
             n_splits=5, shuffle=True, random_state=self.random_state + 3
         )
@@ -338,9 +347,9 @@ class XgbModel:
         logger.info(f"Best: {grid_result.best_score_} using {grid_result.best_params_}")
 
         # We get even sized binning (at least as far as possible)
-        evaluation_bins, nbins = self.get_optimal_bins(nbins=14)
-
-        self.evaluation_bins = evaluation_bins
+        # Not used anymore? Causing errors when only using parsnip, i.e. ndet not being available
+        #evaluation_bins, nbins = self.get_optimal_bins(nbins=14)
+        #self.evaluation_bins = evaluation_bins
 
         # now we plot the confusion matrix
 

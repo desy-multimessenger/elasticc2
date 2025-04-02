@@ -133,6 +133,18 @@ def run_setup_binary(num: int, max_taxlength: int, path_to_featurefiles: str):
     neg_tax = setups_binary[num]["neg_tax"]
     key = setups_binary[num]["key"]
     neg_name = setups_binary[num]["neg_name"]
+    if isinstance(pos_tax[0], list):
+        pos_tax = [
+            x 
+            for xs in pos_tax
+            for x in xs
+        ]
+    if isinstance(neg_tax[0], list):
+        neg_tax = [
+            x 
+            for xs in neg_tax
+            for x in xs
+        ]
 
     from elasticc2.train_binary_model import XgbModel
 
