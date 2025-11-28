@@ -46,7 +46,7 @@ class XgbModel:
         n_iter: int = 5,
         random_state: int = 42,
         plotdir: str | Path = ".",
-        grid_search_sample_size: int = 10000,
+        grid_search_sample_size: int = 5000,
         cols_to_use: list[str] = [],
         n_threads: int | None = None,
         objective: str | None = None,

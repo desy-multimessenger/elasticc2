@@ -99,6 +99,90 @@ setups_binary = {
             tax.ids_from_keys("snibc"),
         ],
     },
+    10: {
+        "key": "sn91bg",
+        "neg_name": "Other SNe",
+        "pos_tax": tax.ids_from_keys("sn91bg"),
+        "neg_tax": [
+            tax.ids_from_keys("snibc"),
+            tax.ids_from_keys("snii"),
+            tax.ids_from_keys("sniin"),
+            tax.ids_from_keys("sniax"),
+            tax.ids_from_keys("snia"),
+            tax.nrec.long.get_ids(),
+        ],
+    },
+    11: {
+        "key": "sniax",
+        "neg_name": "Other SNe",
+        "pos_tax": tax.ids_from_keys("sniax"),
+        "neg_tax": [
+            tax.ids_from_keys("snibc"),
+            tax.ids_from_keys("snii"),
+            tax.ids_from_keys("sniin"),
+            tax.ids_from_keys("sn91bg"),
+            tax.ids_from_keys("snia"),
+            tax.nrec.long.get_ids(),
+        ],
+    },
+    12: {
+        "key": "TDE",
+        "neg_name": "SNe",
+        "pos_tax": tax.ids_from_keys("tde"),
+        "neg_tax": [
+            tax.nrec.sn.get_ids(),
+            tax.ids_from_keys("slsn"),
+        ],
+    },
+    13: {
+        "key": "stripptest",
+        "neg_name": "hydrogen",
+        "pos_tax": [
+            tax.ids_from_keys("snia"),
+            tax.ids_from_keys("snibc"),
+            tax.ids_from_keys("sniax"),
+            tax.ids_from_keys("sn91bg"),
+        ],
+        "neg_tax": [
+            tax.ids_from_keys("snii"),
+            tax.ids_from_keys("sniin"),
+        ],
+    },
+    14: {
+        "key": "iatest",
+        "neg_name": "cc",
+        "pos_tax": [
+            tax.ids_from_keys("snia"),
+            tax.ids_from_keys("sniax"),
+            tax.ids_from_keys("sn91bg"),
+        ],
+        "neg_tax": [
+            tax.ids_from_keys("snibc"),
+        ],
+    },
+    15: {
+        "key": "iacosmo",
+        "neg_name": "weirdos",
+        "pos_tax": [
+            tax.ids_from_keys("snia"),
+        ],
+            "neg_tax": [
+            tax.ids_from_keys("sniax"),
+            tax.ids_from_keys("sn91bg"),
+        ],
+    },
+    16: {
+        "key": "ia",
+        "neg_name": "cc",
+        "pos_tax": [
+            tax.ids_from_keys("snia"),
+        ],
+            "neg_tax": [
+            tax.ids_from_keys("snii"),
+            tax.ids_from_keys("sniin"),
+            tax.ids_from_keys("snibc"),
+        ],
+    },
 }
 
 setups_multivar = {
@@ -151,7 +235,8 @@ def run_setup_binary(num: int, max_taxlength: int, path_to_featurefiles: str):
     if num == 3:
         grid_search_sample_size = 1000
     else:
-        grid_search_sample_size = 10000
+#        grid_search_sample_size = 3000     # Final
+        grid_search_sample_size = 10000   # Full
 
     model = XgbModel(
         pos_tax=pos_tax,
@@ -241,7 +326,7 @@ def run_xgb() -> None:
             "Path to folder containing training and validation feature files. "
             "Default is to use the environment variable 'ELASTICCDATA'. "
             "Feature files assumed to be called features*[train|validate].parquet."
-        ),
+        ),  
     )
 
     parser.add_argument(

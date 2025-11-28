@@ -65,8 +65,8 @@ class XgbModel:
         self.n_threads = n_threads
 
         self.create_dirs()
-        self.df_train = self.read_featuredata(training=True)
-        self.df_val = self.read_featuredata(training=False)
+        self.read_featuredata(training=True)
+        self.read_featuredata(training=False)
 
         if len(cols_to_use) > 0:
             # Use input features
@@ -126,6 +126,7 @@ class XgbModel:
             )
 
         fulldf = None
+        dfstock = None
 
         # The elasticc case with individual feature files for each taxonomy class
         for fname in files:
@@ -162,6 +163,10 @@ class XgbModel:
             cols_to_drop = [
                 colname for colname in df.keys() if colname in ["stock", "true"]
             ]
+            # Potentially retain the stock ID for later use
+            if "stock" in cols_to_drop:
+                print('yep, stock in cols to drop')
+                dfstock = df["stock"]
 
             df = df.drop(columns=cols_to_drop) 
             df = df.fillna(np.nan)
@@ -170,14 +175,17 @@ class XgbModel:
                 fulldf = df
             else:
                 fulldf = pd.concat([fulldf, df], ignore_index=True)
-            self.readlog.append([self.pos_tax, fname, inrows, userows])
-            
-        
-        # Go through columns and look for weirdly distributed
-        #for col in fulldf.columns:
-        #    print(col, np.mean(fulldf[col]), np.std(fulldf[col]), np.min(fulldf[col]), np.max(fulldf[col]) )
 
-        return fulldf
+            self.readlog.append([self.pos_tax, fname, inrows, userows])        
+
+        if training:
+            self.df_train = fulldf 
+            self.stock_train = dfstock
+        else:
+            self.df_val = fulldf 
+            self.stock_val = dfstock
+
+
 
     def plot_balance(self):
         """
@@ -214,8 +222,8 @@ class XgbModel:
         model = xgb.XGBClassifier(
             scale_pos_weight=scale_pos_weight,
             random_state=self.random_state,
-            objective="binary:logistic",
-            eval_metric="aucpr",
+            objective="binary:logistic",   # "binary:logistic" "reg:linear" "binary:hinge" "reg:squarederror" "reg:logistic" "binary:logitraw"
+            eval_metric="aucpr",    # "aucpr" "logloss" "auc" "error" "rmse" "mae"
             colsample_bytree=1.0,
             n_jobs=self.n_threads,
         )
@@ -437,18 +445,57 @@ class XgbModel:
         plt.close()
 
         # now we plot the confusion matrix
-        self.df_test_subsample
+        #self.df_test_subsample
 
         features = self.df_test_subsample[self.cols_to_use]
         target = self.df_test_subsample.target
         y_true = target.replace({True: self.pos_name, False: self.neg_name}).values
         y_pred_raw = list(best_estimator.predict(features))
         y_pred = [self.pos_name if i == 1 else self.neg_name for i in y_pred_raw]
+        y_prob = best_estimator.predict_proba(features)
+        y_prob = y_prob[:,1]  # Probabilities for positive class
+
 
         self.plot_confusion(y_true=y_true, y_pred=y_pred)
         self.plot_confusion(y_true=y_true, y_pred=y_pred, normalize="all")
         self.plot_confusion(y_true=y_true, y_pred=y_pred, normalize="pred")
         self.plot_confusion(y_true=y_true, y_pred=y_pred, normalize="true")
+
+        self.eval_precision_recall(y_true=y_true, y_prob=y_prob)
+        self.eval_features()
+        if self.stock_val is not None:
+            self.export_results(cols=[y_prob, self.df_test_subsample['ndet']], labels=['prob','ndet'], training=False)
+
+        # Also export training results
+        if self.stock_train is not None:
+            y_prob_train = best_estimator.predict_proba(
+                self.df_train[self.cols_to_use]
+                )
+            y_prob_train = y_prob_train[:,1]  # Probabilities for positive class
+            self.export_results(cols=[y_prob_train, self.df_train['ndet']], labels=['prob','ndet'], training=True)
+         
+
+    def export_results(self, cols: list[np.ndarray], labels:list[str], training=True):
+        """
+        Export predctions to file
+        """
+        if training:
+            outpath = self.model_dir / f"predictions_train_{self.pos_name}_vs_{self.neg_name}.csv"
+            stocks = self.stock_train
+        else:
+            outpath = self.model_dir / f"predictions_val_{self.pos_name}_vs_{self.neg_name}.csv"
+            stocks = self.stock_val
+
+        foo = {
+            label: col for col, label in zip(cols, labels)
+        }
+        foo['stock'] = stocks.values
+        df_out = pd.DataFrame(foo)
+
+        df_out.to_csv(outpath, index=False)
+        logger.info(f"Exported predictions to {outpath}")
+
+
 
     def get_optimal_bins(self, ndet, nbins=20):
         """
@@ -560,3 +607,85 @@ class XgbModel:
         logger.info(f"We saved the evaluation to {outpath}")
 
         plt.close()
+
+
+    def eval_features(self, probfraccut: float = 0.01):
+        """
+        Ealuate feature importance. 
+        """
+
+        featdict = { 
+            feat: imp for feat, imp in zip(self.cols_to_use, self.best_estimator.feature_importances_)
+        }
+        featitems = sorted(featdict.items(), key=lambda x: x[1], reverse=True)
+
+        for feat, imp in featitems:
+            print(feat, imp)
+
+        maxp = max( featdict.values() )
+        important_feats = [ feat for feat, imp in featitems if imp >= probfraccut * maxp ]  
+        print(f"\nFeatures with importance above {probfraccut} of max ({maxp}):")
+        print(important_feats)
+
+
+
+    def eval_precision_recall(
+        self, y_true: np.ndarray, y_prob: np.ndarray, precision_threshold: float = 0.99
+    ):
+        """
+        Evaluate precision and recall at given probability threshold.
+        Also plot precision-recall curve.
+        """
+
+        fpr, tpr, thresholds_roc = metrics.roc_curve(y_true, y_prob, pos_label=self.pos_name)
+        prec, rec, thresholds_pr = metrics.precision_recall_curve(y_true, y_prob, pos_label=self.pos_name)
+        iPrecise = np.where(prec >= precision_threshold)[0] 
+        prob_threshold = min(thresholds_pr[iPrecise[:-1]])  # Min threshold where precision is above threshold - Skipping last entry to get thresholds - conservative or not? 
+        print(f"At precision {precision_threshold}, prob threshold is {prob_threshold}")
+        if prob_threshold < 0.5:
+            print("Warning: probability threshold is below 0.5, calculations of uncertain objects will not make sense.")
+        secure_pos = np.sum( (y_prob >= prob_threshold) & (y_true == self.pos_name) )
+        total_pos = np.sum(y_true == self.pos_name)
+        total_selected = np.sum(y_prob >= prob_threshold)
+        recall_at_prec = secure_pos / total_pos if total_pos > 0 else 0
+        precision_at_prec = secure_pos / total_selected if total_selected > 0 else 0
+        print(f"At precision {precision_threshold}, recall is {recall_at_prec}, precision is {precision_at_prec}")
+        secure_neg = np.sum( (y_prob < (1-prob_threshold)) & (y_true == self.neg_name) )
+        total_neg = np.sum(y_true == self.neg_name)
+        total_selected_neg = np.sum(y_prob < (1-prob_threshold))
+        recall_neg_at_prec = secure_neg / total_neg if total_neg > 0 else 0
+        precision_neg_at_prec = secure_neg / total_selected_neg if total_selected_neg > 0 else 0
+        print(f"At precision {precision_threshold}, negative class recall is {recall_neg_at_prec}, precision is {precision_neg_at_prec}")  
+
+        print(f"From {len(y_true)} objects, {total_selected} selected as positive, {total_selected_neg} are negative class selected.")
+
+
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize = (5,5));
+
+        ax1.plot(fpr, tpr);
+        ax2.plot(rec, prec);
+
+#        ax1.set_xlim([0, 0.0005])
+#        ax1.set_ylim([0.5, 0.95])
+#        ax1.axvline(2e-4, color='b', linestyle='dashed', linewidth=2)
+        ax1.set_xlabel('FPR/Fallout')
+        ax1.set_ylabel('TPR/Recall')
+        ax2.set_xlabel('Recall')
+        ax2.set_ylabel('Precision')
+        ax1.set_title('ROC')
+        ax2.set_title('PR')
+        #ax2.set_xlim([0.5, 1])
+
+        outpath = (
+            self.plot_dir
+            / f"rocpr_{self.pos_name}_vs_{self.neg_name}.pdf"
+        )
+
+
+        plt.tight_layout()
+        plt.savefig(outpath, dpi=300)
+        logger.info(f"We saved the evaluation to {outpath}")
+
+        plt.close(fig)
+
+
